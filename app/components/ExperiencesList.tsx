@@ -9,9 +9,25 @@ interface ExperiencesListProps {
   experiences: Experience[];
 }
 
+// Category icons mapping
+const categoryIcons: Record<string, string> = {
+  'Dining': '🍽️',
+  'Travel': '✈️',
+  'Hotels': '🏨',
+  'Shopping': '🛍️',
+  'Fitness': '💪',
+  'Entertainment': '🎭',
+  'Drinks': '🍸',
+  'Coffee': '☕',
+  'Wellness': '🧘',
+  'Experiences': '🎯',
+  'Default': '🎉'
+};
+
 export default function ExperiencesList({ experiences }: ExperiencesListProps) {
   const [selectedCardType, setSelectedCardType] = useState<CardType>('credit_free');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   
   const categories = getCategories(experiences);
   const filteredExperiences = selectedCategory
@@ -27,7 +43,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
     return acc;
   }, {} as Record<string, Experience[]>);
 
-  // Sort experiences within each category by best value and determine unique best
+  // Sort experiences within each category by best value
   Object.keys(experiencesByCategory).forEach((category) => {
     const categoryExperiences = experiencesByCategory[category]
       .filter((exp) => exp.redemptionTiers.length > 0)
@@ -54,7 +70,6 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
     
     const bestMetrics = calculateValueMetrics(bestTier, selectedCardType);
     
-    // Check if any other experience has the same effective return
     const otherExperiences = categoryExperiences.filter(exp => exp.id !== experience.id);
     const hasTie = otherExperiences.some(exp => {
       const otherBestTier = getBestTier(exp.redemptionTiers, selectedCardType);
@@ -66,112 +81,160 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
     return !hasTie;
   };
 
+  const toggleCategoryExpansion = (category: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(category)) {
+      newExpanded.delete(category);
+    } else {
+      newExpanded.add(category);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
   return (
     <div style={{ backgroundColor: 'var(--background)' }} className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header with Card Type Dropdown */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>Yonder Points Optimizer</h1>
-            <p className="text-base" style={{ color: 'var(--foreground)', opacity: 0.7 }}>
-              With {CARD_TYPES[selectedCardType].name}, you earn {CARD_TYPES[selectedCardType].pointsPerPound} point{CARD_TYPES[selectedCardType].pointsPerPound > 1 ? 's' : ''} per £1 spent
-            </p>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Friendly Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
+            ✨ Yonder Points Optimizer
+          </h1>
+          <p className="text-lg mb-6" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
+            Find the sweetest deals for your points! 🍑
+          </p>
+          
+          {/* Card Type Selector - More Prominent */}
+          <div className="inline-flex rounded-2xl p-1 shadow-lg" style={{ backgroundColor: 'var(--light-peach)' }}>
+            {Object.entries(CARD_TYPES).map(([key, cardType]) => (
+              <button
+                key={key}
+                onClick={() => setSelectedCardType(key as CardType)}
+                className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-200 ${
+                  selectedCardType === key ? 'shadow-md transform scale-105' : 'hover:scale-102'
+                }`}
+                style={{
+                  backgroundColor: selectedCardType === key ? 'var(--yonder-orange)' : 'transparent',
+                  color: selectedCardType === key ? 'white' : 'var(--foreground)'
+                }}
+              >
+                {cardType.name} ({cardType.pointsPerPound}x)
+              </button>
+            ))}
           </div>
           
-          <div className="relative">
-            <select
-              value={selectedCardType}
-              onChange={(e) => setSelectedCardType(e.target.value as CardType)}
-              className="appearance-none bg-white border-2 rounded-lg px-4 py-3 pr-10 text-sm font-medium hover:border-blue-300 focus:outline-none focus:ring-2 focus:border-blue-500 shadow-sm"
-              style={{ 
-                borderColor: 'var(--border-color)',
-                color: 'var(--foreground)'
-              }}
-            >
-              {Object.entries(CARD_TYPES).map(([key, cardType]) => (
-                <option key={key} value={key}>
-                  {cardType.name} ({cardType.pointsPerPound}x)
-                </option>
-              ))}
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3" style={{ color: 'var(--foreground)', opacity: 0.5 }}>
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-              </svg>
-            </div>
-          </div>
+          <p className="text-sm mt-3" style={{ color: 'var(--foreground)', opacity: 0.6 }}>
+            You earn {CARD_TYPES[selectedCardType].pointsPerPound} point{CARD_TYPES[selectedCardType].pointsPerPound > 1 ? 's' : ''} per £1 spent
+          </p>
         </div>
 
-        {/* Category Filter */}
-        <div className="mb-8 overflow-x-auto">
-          <div className="flex gap-3 pb-2 min-w-max">
+        {/* Big Friendly Category Pills */}
+        <div className="mb-10 overflow-x-auto">
+          <div className="flex gap-4 pb-4 min-w-max justify-center">
             <button
               onClick={() => setSelectedCategory(null)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                selectedCategory === null
-                  ? 'text-white shadow-sm'
-                  : 'bg-white hover:bg-gray-50 border'
+              className={`flex items-center gap-3 px-6 py-4 rounded-2xl text-lg font-semibold whitespace-nowrap transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+                selectedCategory === null ? 'shadow-xl scale-105' : ''
               }`}
               style={{
                 backgroundColor: selectedCategory === null ? 'var(--yonder-navy)' : 'white',
-                borderColor: selectedCategory === null ? 'var(--yonder-navy)' : 'var(--border-color)',
                 color: selectedCategory === null ? 'white' : 'var(--foreground)'
               }}
             >
-              All Categories
+              <span className="text-2xl">🌟</span>
+              <span>All Categories</span>
             </button>
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
-                  selectedCategory === category
-                    ? 'text-white shadow-sm'
-                    : 'bg-white hover:bg-gray-50 border'
+                className={`flex items-center gap-3 px-6 py-4 rounded-2xl text-lg font-semibold whitespace-nowrap transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+                  selectedCategory === category ? 'shadow-xl scale-105' : ''
                 }`}
                 style={{
                   backgroundColor: selectedCategory === category ? 'var(--yonder-navy)' : 'white',
-                  borderColor: selectedCategory === category ? 'var(--yonder-navy)' : 'var(--border-color)',
                   color: selectedCategory === category ? 'white' : 'var(--foreground)'
                 }}
               >
-                {category}
+                <span className="text-2xl">{categoryIcons[category] || categoryIcons.Default}</span>
+                <span>{category}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Experiences by Category */}
-        <div className="space-y-8">
-          {Object.entries(experiencesByCategory).map(([category, categoryExperiences]) => (
-            <div key={category}>
-              <h2 className="text-xl font-semibold mb-4 flex items-center" style={{ color: 'var(--foreground)' }}>
-                <span className="text-white px-2 py-1 rounded text-sm font-medium mr-3" style={{ backgroundColor: 'var(--yonder-orange)' }}>
-                  {category}
-                </span>
-                <span className="text-sm font-normal" style={{ color: 'var(--foreground)', opacity: 0.6 }}>
-                  {categoryExperiences.length} experience{categoryExperiences.length !== 1 ? 's' : ''}
-                </span>
-              </h2>
-              <div className="grid gap-4 lg:grid-cols-2">
-                {categoryExperiences.map((experience, index) => (
-                  <ExperienceCard
-                    key={experience.id}
-                    experience={experience}
-                    selectedCardType={selectedCardType}
-                    isBestInCategory={index === 0}
-                    isUniquelyBest={index === 0 && isUniquelyBest(experience, categoryExperiences)}
-                  />
-                ))}
+        {/* Experiences by Category - Top 3 with Expand */}
+        <div className="space-y-12">
+          {Object.entries(experiencesByCategory).map(([category, categoryExperiences]) => {
+            const isExpanded = expandedCategories.has(category);
+            const displayExperiences = isExpanded ? categoryExperiences : categoryExperiences.slice(0, 3);
+            const hasMore = categoryExperiences.length > 3;
+
+            return (
+              <div key={category}>
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold flex items-center gap-3" style={{ color: 'var(--foreground)' }}>
+                    <span className="text-3xl">{categoryIcons[category] || categoryIcons.Default}</span>
+                    <span>{category}</span>
+                    <span className="text-lg font-normal px-3 py-1 rounded-full text-white" style={{ backgroundColor: 'var(--yonder-orange)' }}>
+                      {categoryExperiences.length}
+                    </span>
+                  </h2>
+                  
+                  {hasMore && (
+                    <button
+                      onClick={() => toggleCategoryExpansion(category)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105"
+                      style={{
+                        backgroundColor: 'var(--light-peach)',
+                        color: 'var(--yonder-navy)',
+                        border: `2px solid var(--yonder-orange)`
+                      }}
+                    >
+                      {isExpanded ? '🔼 Show Less' : `🔽 Show All ${categoryExperiences.length}`}
+                    </button>
+                  )}
+                </div>
+
+                <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                  {displayExperiences.map((experience, index) => (
+                    <ExperienceCard
+                      key={experience.id}
+                      experience={experience}
+                      selectedCardType={selectedCardType}
+                      isBestInCategory={index === 0}
+                      isUniquelyBest={index === 0 && isUniquelyBest(experience, categoryExperiences)}
+                    />
+                  ))}
+                </div>
+
+                {hasMore && !isExpanded && (
+                  <div className="text-center mt-6">
+                    <button
+                      onClick={() => toggleCategoryExpansion(category)}
+                      className="px-6 py-3 rounded-xl font-semibold transition-all duration-200 hover:scale-105 shadow-lg"
+                      style={{
+                        backgroundColor: 'var(--yonder-orange)',
+                        color: 'white'
+                      }}
+                    >
+                      Show {categoryExperiences.length - 3} more {category.toLowerCase()} options
+                    </button>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {filteredExperiences.length === 0 && (
-          <div className="text-center py-16" style={{ color: 'var(--foreground)', opacity: 0.6 }}>
-            <div className="text-lg font-medium mb-2">No experiences found</div>
-            <p className="text-sm">Try selecting a different category or check back later for new experiences.</p>
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">😔</div>
+            <div className="text-2xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
+              No experiences found
+            </div>
+            <p className="text-lg" style={{ color: 'var(--foreground)', opacity: 0.7 }}>
+              Try selecting a different category or check back later for new experiences!
+            </p>
           </div>
         )}
       </div>

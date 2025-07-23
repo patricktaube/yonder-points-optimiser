@@ -19,9 +19,9 @@ export interface Experience {
 // Card types with their earning rates
 export const CARD_TYPES = {
   debit_free: { name: 'Debit Free', pointsPerPound: 1 },
-  debit_paid: { name: 'Debit Full', pointsPerPound: 4 },
+  debit_paid: { name: 'Debit Paid', pointsPerPound: 4 },
   credit_free: { name: 'Credit Free', pointsPerPound: 1 },
-  credit_paid: { name: 'Credit Full', pointsPerPound: 5 },
+  credit_paid: { name: 'Credit Paid', pointsPerPound: 5 },
 } as const;
 
 export type CardType = keyof typeof CARD_TYPES;
@@ -101,6 +101,9 @@ export async function getExperiences(): Promise<Experience[]> {
       exp.redemptionTiers.sort((a, b) => a.tierNumber - b.tierNumber);
     });
 
+    console.log(`Loaded ${experiences.length} experiences`);
+    console.log(`Sample experience:`, experiences[0]);
+
     return experiences;
   } catch (error) {
     console.error('Error fetching from Airtable:', error);
@@ -108,10 +111,31 @@ export async function getExperiences(): Promise<Experience[]> {
   }
 }
 
-// Helper function to get unique categories
+// Helper function to get unique categories in preferred order
 export function getCategories(experiences: Experience[]): string[] {
-  const categories = new Set(experiences.map((exp) => exp.category));
-  return Array.from(categories);
+  const categoriesFromData = new Set(experiences.map((exp) => exp.category));
+  
+  // Define preferred order - you can modify this array to change the order
+  const preferredOrder = [
+    'Dining',
+    'Travel', 
+    'Hotels',
+    'Shopping',
+    'Drinks',
+    'Coffee',
+    'Fitness',
+    'Entertainment',
+    'Wellness',
+    'Experiences'
+  ];
+  
+  // Start with preferred order, only including categories that exist in data
+  const orderedCategories = preferredOrder.filter(cat => categoriesFromData.has(cat));
+  
+  // Add any remaining categories that weren't in our preferred order
+  const remainingCategories = Array.from(categoriesFromData).filter(cat => !preferredOrder.includes(cat));
+  
+  return [...orderedCategories, ...remainingCategories];
 }
 
 // Updated calculation functions
@@ -135,7 +159,9 @@ export function calculateValueMetrics(
 export function getBestTier(
   redemptionTiers: RedemptionTier[],
   cardType: CardType
-): RedemptionTier {
+): RedemptionTier | null {
+  if (redemptionTiers.length === 0) return null;
+  
   return redemptionTiers.reduce((best, current) => {
     const bestMetrics = calculateValueMetrics(best, cardType);
     const currentMetrics = calculateValueMetrics(current, cardType);
