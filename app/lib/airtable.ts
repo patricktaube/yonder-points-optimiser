@@ -1,4 +1,31 @@
 // app/lib/airtable.ts
+
+// Define interfaces for Airtable record types
+interface AirtableExperienceRecord {
+  id: string;
+  fields: {
+    Name: string;
+    Category: string;
+    Description?: string;
+    Active: boolean;
+    Month: string;
+  };
+}
+
+interface AirtableTierRecord {
+  id: string;
+  fields: {
+    Tier: string;
+    Experiences?: string[];
+    'Points Required': number;
+    'Pound Value': number;
+  };
+}
+
+interface AirtableResponse<T> {
+  records: T[];
+}
+
 export interface RedemptionTier {
   id: string;
   tierNumber: number;
@@ -46,7 +73,7 @@ export async function getExperiences(): Promise<Experience[]> {
       throw new Error(`Experiences API error: ${experiencesResponse.status}`);
     }
 
-    const experiencesData = await experiencesResponse.json();
+    const experiencesData = await experiencesResponse.json() as AirtableResponse<AirtableExperienceRecord>;
 
     // Fetch redemption tiers
     const tiersUrl = new URL(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Redemption%20Tiers`);
@@ -59,12 +86,12 @@ export async function getExperiences(): Promise<Experience[]> {
       throw new Error(`Tiers API error: ${tiersResponse.status}`);
     }
 
-    const tiersData = await tiersResponse.json();
+    const tiersData = await tiersResponse.json() as AirtableResponse<AirtableTierRecord>;
 
     console.log('Sample tier record:', tiersData.records[0]); // Debug log
 
     // Process experiences
-    const experiences: Experience[] = experiencesData.records.map((record: any) => ({
+    const experiences: Experience[] = experiencesData.records.map((record) => ({
       id: record.id,
       name: record.fields.Name,
       category: record.fields.Category,
@@ -75,7 +102,7 @@ export async function getExperiences(): Promise<Experience[]> {
     }));
 
     // Map tiers to experiences
-    tiersData.records.forEach((tierRecord: any) => {
+    tiersData.records.forEach((tierRecord) => {
       const experienceIds = tierRecord.fields.Experiences; // Changed from 'Experience' to 'Experiences'
       if (!experienceIds || experienceIds.length === 0) return;
 
