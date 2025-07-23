@@ -1,103 +1,86 @@
 // app/components/ExperienceCard.tsx
 'use client';
 
-import { Experience, calculateEffectiveReturn } from '../lib/airtable';
+import { Experience, calculateValueMetrics, getBestTier, CardType } from '../lib/airtable';
 
 interface ExperienceCardProps {
   experience: Experience;
-  isPaidTier: boolean;
+  selectedCardType: CardType;
   isBestInCategory: boolean;
+  isUniquelyBest: boolean;
 }
 
 export default function ExperienceCard({
   experience,
-  isPaidTier,
+  selectedCardType,
   isBestInCategory,
+  isUniquelyBest,
 }: ExperienceCardProps) {
   // Check if redemption rates are linear
-  const isLinear = experience.redemptionTiers.length >= 2 &&
-    experience.redemptionTiers.every((tier, index) => {
+  const valueMetrics = experience.redemptionTiers.map(tier => 
+    calculateValueMetrics(tier, selectedCardType)
+  );
+
+  const isLinear = valueMetrics.length >= 2 &&
+    valueMetrics.every((metrics, index) => {
       if (index === 0) return true;
-      return Math.abs(tier.per1000Points - experience.redemptionTiers[0].per1000Points) < 0.01;
+      return Math.abs(metrics.valuePerKPoints - valueMetrics[0].valuePerKPoints) < 0.01;
     });
 
-  // Find best tier if not linear
-  const bestTier = !isLinear
-    ? experience.redemptionTiers.reduce((best, current) =>
-        current.per1000Points > best.per1000Points ? current : best
-      )
-    : null;
+  // Get best tier value for display
+  const bestTier = getBestTier(experience.redemptionTiers, selectedCardType);
+  const bestMetrics = bestTier ? calculateValueMetrics(bestTier, selectedCardType) : null;
 
-  // Get value color
-  const getValueColor = (per1000Points: number) => {
-    if (per1000Points >= 10) return 'text-green-600';
-    if (per1000Points >= 7) return 'text-yellow-600';
-    return 'text-red-600';
-  };
-
-  const getValueBgColor = (per1000Points: number) => {
-    if (per1000Points >= 10) return 'bg-green-50 border-green-200';
-    if (per1000Points >= 7) return 'bg-yellow-50 border-yellow-200';
-    return 'bg-red-50 border-red-200';
-  };
+  // Format tiers display
+  const tiersDisplay = experience.redemptionTiers
+    .sort((a, b) => a.pointsRequired - b.pointsRequired)
+    .map(tier => `${(tier.pointsRequired / 1000).toFixed(0)}k→£${tier.poundValue}`)
+    .join(' | ');
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 relative">
-      {isBestInCategory && (
-        <div className="absolute -top-2 -right-2 bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full">
+    <div className="bg-white rounded-lg border border-gray-200 p-4 relative hover:shadow-md transition-shadow">
+      {isBestInCategory && isUniquelyBest && (
+        <div className="absolute -top-2 -right-2 bg-green-700 text-white text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
           Best Value
         </div>
       )}
 
-      <h3 className="text-lg font-semibold text-gray-900 mb-2">{experience.name}</h3>
-      
-      {experience.description && (
-        <p className="text-sm text-gray-600 mb-3">{experience.description}</p>
-      )}
-
-      <div className="space-y-3">
-        {experience.redemptionTiers.map((tier) => {
-          const effectiveReturn = calculateEffectiveReturn(tier.per1000Points, isPaidTier);
-          const isThisBestTier = bestTier && tier.id === bestTier.id;
-
-          return (
-            <div
-              key={tier.id}
-              className={`border rounded-lg p-3 ${
-                isThisBestTier ? getValueBgColor(tier.per1000Points) : 'bg-gray-50 border-gray-200'
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="text-sm font-medium text-gray-900">
-                    {tier.pointsRequired.toLocaleString()} points → £{tier.poundValue}
-                  </div>
-                  <div className={`text-xs mt-1 ${getValueColor(tier.per1000Points)}`}>
-                    £{tier.per1000Points.toFixed(2)} per 1,000 points
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Effective return</div>
-                  <div className={`text-sm font-semibold ${getValueColor(tier.per1000Points)}`}>
-                    {effectiveReturn.toFixed(1)}%
-                  </div>
-                </div>
-              </div>
-              {isThisBestTier && !isLinear && (
-                <div className="mt-2 text-xs font-medium text-green-700">
-                  ★ Best tier for this experience
-                </div>
-              )}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        {/* Left side - Experience info */}
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold text-slate-800 mb-1 truncate">
+            {experience.name}
+          </h3>
+          {experience.description && (
+            <p className="text-sm text-slate-600 mb-2 line-clamp-2">
+              {experience.description}
+            </p>
+          )}
+          <div className="text-xs text-slate-500">
+            Tiers: {tiersDisplay}
+          </div>
+          {!isLinear && (
+            <div className="text-xs text-orange-600 font-medium mt-1">
+              ⚠️ Non-linear rates
             </div>
-          );
-        })}
-      </div>
-
-      {!isLinear && (
-        <div className="mt-3 text-xs text-gray-500 italic">
-          ⚠️ Non-linear redemption rates - consider the highlighted tier
+          )}
         </div>
-      )}
+
+        {/* Right side - Value metrics */}
+        {bestMetrics && (
+          <div className="flex flex-col sm:items-end text-right shrink-0">
+            <div className="text-lg font-bold text-blue-900">
+              £{bestMetrics.valuePerKPoints.toFixed(2)} per 1,000 points
+            </div>
+            <div className="text-sm text-slate-500">
+              {bestMetrics.effectiveReturn.toFixed(1)}% return
+            </div>
+            <div className="text-xs text-slate-400 mt-1">
+              Spend £{bestMetrics.poundsToSpend.toFixed(0)} to earn
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

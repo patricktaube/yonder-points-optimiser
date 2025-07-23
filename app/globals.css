@@ -1,26 +1,38 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #fef4e4; /* Soft peach background */
+  --foreground: #1e252b; /* Dark slate for text */
+  --yonder-navy: #203263; /* Dark blue accent */
+  --yonder-orange: #da6120; /* Burnt orange */
+  --yonder-sage: #166534; /* Forest/sage green for badges */
+  --card-background: #ffffff;
+  --border-color: #e2e8f0;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-yonder-navy: var(--yonder-navy);
+  --color-yonder-orange: var(--yonder-orange);
+  --color-yonder-sage: var(--yonder-sage);
+  --color-card-background: var(--card-background);
+  --color-border: var(--border-color);
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #0f172a;
+    --foreground: #f1f5f9;
+    --card-background: #1e293b;
+    --border-color: #334155;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }

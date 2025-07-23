@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "airtable": "^0.12.2",
     "next": "15.4.3",
     "react": "19.1.0",
     "react-dom": "19.1.0"
@@ -20,12 +19,11 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.0.1",
     "eslint": "^9",
     "eslint-config-next": "15.4.3",
+    "postcss": "^8.4.5",
     "tailwindcss": "^4",
-    "typescript": "^5",
-    "autoprefixer": "^10.0.1",
-    "postcss": "^8.4.5"
-
+    "typescript": "^5"
   }
 }
