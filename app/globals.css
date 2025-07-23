@@ -4,7 +4,7 @@
 :root {
   --background: #fdf2f8; /* Soft peach background */
   --foreground: #1e293b; /* Dark slate for text */
-  --yonder-navy: #1e3a8a; /* Dark blue accent */
+  --yonder-navy: #1e293b; /* Dark blue accent */
   --yonder-orange: #ea580c; /* Burnt orange */
   --yonder-sage: #166534; /* Forest/sage green for badges */
   --card-background: #ffffff;
@@ -24,10 +24,10 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0f172a;
-    --foreground: #f1f5f9;
-    --card-background: #1e293b;
-    --border-color: #334155;
+    --background: #2a240f;
+    --foreground: #1e293b;
+    --card-background: #f3cca0;
+    --border-color: #f3cca0;
   }
 }
 

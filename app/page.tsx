@@ -1,3 +1,33 @@
+// // app/page.tsx
+// import { Suspense } from 'react';
+// import ExperiencesList from './components/ExperiencesList';
+// import { getExperiences } from './lib/airtable';
+
+// export const revalidate = 300; // Revalidate every 5 minutes
+
+// export default async function Home() {
+//   const experiences = await getExperiences();
+
+//   return (
+//     <main className="min-h-screen" style={{ backgroundColor: '#fef7f0' }}>
+//       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+//         <header className="mb-8">
+//           <h1 className="text-3xl font-bold text-gray-900 mb-2">
+//             Yonder Points Optimiser
+//           </h1>
+//           <p className="text-gray-600">
+//             Find the best value redemptions for your Yonder points
+//           </p>
+//         </header>
+
+//         <Suspense fallback={<div className="text-center py-8">Loading experiences...</div>}>
+//           <ExperiencesList experiences={experiences} />
+//         </Suspense>
+//       </div>
+//     </main>
+//   );
+// }
+
 // app/page.tsx
 import { Suspense } from 'react';
 import ExperiencesList from './components/ExperiencesList';
@@ -9,24 +39,10 @@ export default async function Home() {
   const experiences = await getExperiences();
 
   return (
-    <main className="min-h-screen">
-      <Suspense fallback={
-        <div className="bg-rose-50 min-h-screen">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="animate-pulse">
-              <div className="h-8 bg-slate-200 rounded w-1/3 mb-4"></div>
-              <div className="h-4 bg-slate-200 rounded w-1/2 mb-8"></div>
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-24 bg-slate-200 rounded-lg"></div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      }>
+    <div className="main-container">
+      <Suspense fallback={<div className="text-center py-8">Loading experiences...</div>}>
         <ExperiencesList experiences={experiences} />
       </Suspense>
-    </main>
+    </div>
   );
 }

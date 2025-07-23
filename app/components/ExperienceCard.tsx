@@ -39,7 +39,7 @@ export default function ExperienceCard({
 
   // Get value color based on return rate
   const getValueEmoji = (returnRate: number) => {
-    if (returnRate >= 2.0) return '🔥'; // Amazing
+    if (returnRate >= 1.95) return '🔥'; // Amazing
     if (returnRate >= 1.8) return '⭐'; // Great
     if (returnRate >= 1.5) return '👍'; // Good
     return '💫'; // Okay
@@ -85,7 +85,7 @@ export default function ExperienceCard({
           <div className="text-3xl font-black mb-1" style={{ color: 'var(--yonder-navy)' }}>
             £{bestMetrics.valuePerKPoints.toFixed(2)}
           </div>
-          <div className="text-sm font-semibold mb-2" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
+          <div className="text-lg font-semibold mb-2" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
             per 1,000 points
           </div>
           <div className="text-sm font-medium" style={{ color: 'var(--yonder-orange)' }}>

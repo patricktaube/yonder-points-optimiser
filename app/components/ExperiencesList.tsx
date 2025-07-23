@@ -34,14 +34,20 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
     ? experiences.filter((exp) => exp.category === selectedCategory)
     : experiences;
 
-  // Group experiences by category
-  const experiencesByCategory = filteredExperiences.reduce((acc, exp) => {
-    if (!acc[exp.category]) {
-      acc[exp.category] = [];
+  // Group experiences by category and maintain the same order as categories
+  const experiencesByCategory: Record<string, Experience[]> = {};
+  
+  // Initialize with empty arrays in the correct order
+  categories.forEach(category => {
+    experiencesByCategory[category] = [];
+  });
+  
+  // Fill the arrays with experiences
+  filteredExperiences.forEach(exp => {
+    if (experiencesByCategory[exp.category]) {
+      experiencesByCategory[exp.category].push(exp);
     }
-    acc[exp.category].push(exp);
-    return acc;
-  }, {} as Record<string, Experience[]>);
+  });
 
   // Sort experiences within each category by best value
   Object.keys(experiencesByCategory).forEach((category) => {
@@ -92,47 +98,181 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
   };
 
   return (
-    <div style={{ backgroundColor: 'var(--background)' }} className="min-h-screen">
+    <div style={{ backgroundColor: '#fef7f0' }} className="min-h-screen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Friendly Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
-            ✨ Yonder Points Optimizer
-          </h1>
-          <p className="text-lg mb-6" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
-            Find the sweetest deals for your points! 🍑
-          </p>
-          
-          {/* Card Type Selector - More Prominent */}
-          <div className="inline-flex rounded-2xl p-1 shadow-lg" style={{ backgroundColor: 'var(--light-peach)' }}>
-            {Object.entries(CARD_TYPES).map(([key, cardType]) => (
-              <button
-                key={key}
-                onClick={() => setSelectedCardType(key as CardType)}
-                className={`px-6 py-3 text-sm font-semibold rounded-xl transition-all duration-200 ${
-                  selectedCardType === key ? 'shadow-md transform scale-105' : 'hover:scale-102'
-                }`}
-                style={{
-                  backgroundColor: selectedCardType === key ? 'var(--yonder-orange)' : 'transparent',
-                  color: selectedCardType === key ? 'white' : 'var(--foreground)'
-                }}
-              >
-                {cardType.name} ({cardType.pointsPerPound}x)
-              </button>
-            ))}
+        {/* Header with Card Type Dropdown in Top Right */}
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-4xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
+              ✨ Yonder Points Optimizer
+            </h1>
+            <p className="text-lg" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
+              Find the sweetest deals for your points! 🍑
+            </p>
           </div>
           
-          <p className="text-sm mt-3" style={{ color: 'var(--foreground)', opacity: 0.6 }}>
-            You earn {CARD_TYPES[selectedCardType].pointsPerPound} point{CARD_TYPES[selectedCardType].pointsPerPound > 1 ? 's' : ''} per £1 spent
-          </p>
+          {/* Card Type Fill-in-the-blank Style */}
+          <div className="flex items-center gap-2 text-lg" style={{ color: 'var(--foreground)' }}>
+            <span>My Yonder card:</span>
+            <div className="relative">
+              <select
+                value={selectedCardType}
+                onChange={(e) => setSelectedCardType(e.target.value as CardType)}
+                className="appearance-none bg-transparent border-0 border-b-2 border-gray-400 px-2 py-1 text-lg font-medium hover:border-gray-600 focus:outline-none focus:border-blue-500 pr-6"
+                style={{ 
+                  color: 'var(--yonder-navy)',
+                  borderBottomStyle: 'solid',
+                  borderBottomWidth: '2px',
+                //   textDecoration: 'underline',
+                //   textDecorationStyle: 'solid',
+                //   textDecorationColor: 'var(--yonder-orange)',
+                //   textUnderlineOffset: '2px'
+                }}
+              >
+                {Object.entries(CARD_TYPES).map(([key, cardType]) => (
+                  <option key={key} value={key}>
+                    {cardType.name}
+                  </option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center">
+                <svg className="fill-current h-4 w-4" style={{ color: 'var(--yonder-navy)' }} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                </svg>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Big Friendly Category Pills */}
-        <div className="mb-10 overflow-x-auto">
-          <div className="flex gap-4 pb-4 min-w-max justify-center">
+{/* Top 3 Overall Best Redemptions */}
+        <div className="mb-12">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>
+              🏆 Top 3 Best Redemptions
+            </h2>
+            <p className="text-lg" style={{ color: 'var(--foreground)', opacity: 0.7 }}>
+              The best-value deals across all categories
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
+            {(() => {
+              // Get all experiences with their best tiers and calculate metrics
+              const allExperiencesWithMetrics = experiences
+                .filter(exp => exp.redemptionTiers.length > 0)
+                .map(exp => {
+                  const bestTier = getBestTier(exp.redemptionTiers, selectedCardType);
+                  if (!bestTier) return null;
+                  const metrics = calculateValueMetrics(bestTier, selectedCardType);
+                  return {
+                    experience: exp,
+                    tier: bestTier,
+                    metrics
+                  };
+                })
+                .filter(item => item !== null)
+                .sort((a, b) => b!.metrics.effectiveReturn - a!.metrics.effectiveReturn)
+                .slice(0, 3);
+
+              // Calculate average for comparison
+              const allValidMetrics = experiences
+                .filter(exp => exp.redemptionTiers.length > 0)
+                .map(exp => {
+                  const bestTier = getBestTier(exp.redemptionTiers, selectedCardType);
+                  if (!bestTier) return null;
+                  return calculateValueMetrics(bestTier, selectedCardType);
+                })
+                .filter(m => m !== null);
+              
+              const averageReturn = allValidMetrics.length > 0 
+                ? allValidMetrics.reduce((sum, m) => sum + m!.effectiveReturn, 0) / allValidMetrics.length
+                : 0;
+
+              return allExperiencesWithMetrics.map((item, index) => {
+                if (!item) return null;
+                const { experience, tier, metrics } = item;
+                const rankEmojis = ['🥇', '🥈', '🥉'];
+                const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
+
+                return (
+                  <div
+                    key={experience.id}
+                    className="bg-white rounded-2xl shadow-xl p-6 relative transform hover:scale-105 transition-all duration-200"
+                    style={{ border: `3px solid ${rankColors[index]}` }}
+                  >
+                    {/* Rank Badge */}
+                    <div 
+                      className="absolute -top-4 -right-4 w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg"
+                      style={{ backgroundColor: rankColors[index] }}
+                    >
+                      {rankEmojis[index]}
+                    </div>
+
+                      {/* Experience Info */}
+                    <div className="mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-2xl">{categoryIcons[experience.category] || categoryIcons.Default}</span>
+                        <span className="text-sm font-medium px-2 py-1 rounded-full" style={{ 
+                          backgroundColor: 'var(--light-peach)', 
+                          color: 'var(--yonder-navy)' 
+                        }}>
+                          {experience.category}
+                        </span>
+                      </div>
+                      <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
+                        {experience.name}
+                      </h3>
+                      {experience.description && (
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                          {experience.description}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Value Metrics */}
+                    <div className="space-y-3">
+                      <div className="text-center">
+                        <div className="text-3xl font-bold" style={{ color: 'var(--yonder-orange)' }}>
+                          £{metrics.valuePerKPoints.toFixed(2)}
+                        </div>
+                        <div className="text-lg font-medium text-gray-600">
+                          per 1,000 points
+                        </div>
+                      </div>
+
+                      <div className="text-center">
+                        <div className="text-md font-semibold" style={{ color: 'var(--foreground)' }}>
+                          {metrics.effectiveReturn.toFixed(1)}% return rate
+                        </div>
+                      </div>
+
+                     {/* Comparison to Average - Simplified */}
+                      <div className="pt-3 border-t border-gray-200">
+                        <div className="flex items-center justify-center gap-2 text-sm">
+                          <span className="text-gray-600">vs average:</span>
+                          <span 
+                            className="font-bold"
+                            style={{ color: metrics.effectiveReturn > averageReturn ? '#10B981' : '#EF4444' }}
+                          >
+                            {metrics.effectiveReturn > averageReturn ? '+' : ''}
+                            {(metrics.effectiveReturn - averageReturn).toFixed(1)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        </div>
+
+        {/* Responsive Category Grid - Same order as sections */}
+        <div className="mb-10">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 justify-items-center">
             <button
               onClick={() => setSelectedCategory(null)}
-              className={`flex items-center gap-3 px-6 py-4 rounded-2xl text-lg font-semibold whitespace-nowrap transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+              className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-base font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full justify-center ${
                 selectedCategory === null ? 'shadow-xl scale-105' : ''
               }`}
               style={{
@@ -140,14 +280,14 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                 color: selectedCategory === null ? 'white' : 'var(--foreground)'
               }}
             >
-              <span className="text-2xl">🌟</span>
-              <span>All Categories</span>
+              <span className="text-xl">🌟</span>
+              <span className="text-sm">All</span>
             </button>
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`flex items-center gap-3 px-6 py-4 rounded-2xl text-lg font-semibold whitespace-nowrap transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 ${
+                className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-base font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full justify-center ${
                   selectedCategory === category ? 'shadow-xl scale-105' : ''
                 }`}
                 style={{
@@ -155,16 +295,19 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                   color: selectedCategory === category ? 'white' : 'var(--foreground)'
                 }}
               >
-                <span className="text-2xl">{categoryIcons[category] || categoryIcons.Default}</span>
-                <span>{category}</span>
+                <span className="text-xl">{categoryIcons[category] || categoryIcons.Default}</span>
+                <span className="text-sm">{category}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* Experiences by Category - Top 3 with Expand */}
+        {/* Experiences by Category - In the same order as category filter */}
         <div className="space-y-12">
-          {Object.entries(experiencesByCategory).map(([category, categoryExperiences]) => {
+          {categories.map((category) => {
+            const categoryExperiences = experiencesByCategory[category] || [];
+            if (categoryExperiences.length === 0) return null;
+            
             const isExpanded = expandedCategories.has(category);
             const displayExperiences = isExpanded ? categoryExperiences : categoryExperiences.slice(0, 3);
             const hasMore = categoryExperiences.length > 3;
