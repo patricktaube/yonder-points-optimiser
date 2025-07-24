@@ -12,15 +12,16 @@ interface ExperiencesListProps {
 // Category icons mapping
 const categoryIcons: Record<string, string> = {
   'Dining': '🍽️',
-  'Travel': '✈️',
+  'Travel': '🌴',
+  "Flights": '✈️',
   'Hotels': '🏨',
   'Shopping': '🛍️',
-  'Fitness': '💪',
-  'Entertainment': '🎭',
-  'Drinks': '🍸',
-  'Coffee': '☕',
+  'Fit & Well': '💪',
+  'Theatre': '🎭',
+  'Lounges': '🛋️',
+  'Treats': '🥐',
+  "Pubs": "🍻",
   'Wellness': '🧘',
-  'Experiences': '🎯',
   'Default': '🎉'
 };
 
@@ -104,10 +105,10 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
         <div className="flex justify-between items-start mb-8">
           <div>
             <h1 className="text-4xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
-              ✨ Yonder Points Optimizer
+              Yonder Points Optimiser
             </h1>
             <p className="text-lg" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
-              Find the sweetest deals for your points! 🍑
+              Find the best-value redemptions for your points!
             </p>
           </div>
           
@@ -150,10 +151,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
             <h2 className="text-3xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>
               🏆 Top 3 Best Redemptions
             </h2>
-            <p className="text-lg" style={{ color: 'var(--foreground)', opacity: 0.7 }}>
-              The best-value deals across all categories
-            </p>
-          </div>
+           </div>
 
           <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
             {(() => {

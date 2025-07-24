@@ -47,7 +47,7 @@ export default function ExperienceCard({
 
   return (
     <div 
-      className="rounded-2xl p-6 relative hover:shadow-xl transition-all duration-300 hover:scale-102 cursor-pointer"
+      className="rounded-2xl p-4 relative hover:shadow-xl transition-all duration-300 hover:scale-102 cursor-pointer"
       style={{ 
         backgroundColor: 'var(--card-background)',
         border: `2px solid var(--border-color)`,
@@ -56,7 +56,7 @@ export default function ExperienceCard({
     >
       {isBestInCategory && isUniquelyBest && (
         <div 
-          className="absolute -top-3 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg best-value-badge"
+          className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg best-value-badge"
           style={{ backgroundColor: 'var(--yonder-sage)' }}
         >
           🏆 Best Value
@@ -64,7 +64,7 @@ export default function ExperienceCard({
       )}
 
       {/* Experience Name with Emoji */}
-      <div className="mb-4">
+      <div className="mb-1">
         <h3 className="text-xl font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
           {bestMetrics && (
             <span className="text-2xl">{getValueEmoji(bestMetrics.effectiveReturn)}</span>
@@ -81,7 +81,7 @@ export default function ExperienceCard({
 
       {/* Main Value Display */}
       {bestMetrics && (
-        <div className="text-center py-4 px-4 rounded-xl mb-4" style={{ backgroundColor: 'var(--light-peach)' }}>
+        <div className="text-center py-1 px-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--light-peach)' }}>
           <div className="text-3xl font-black mb-1" style={{ color: 'var(--yonder-navy)' }}>
             £{bestMetrics.valuePerKPoints.toFixed(2)}
           </div>
@@ -96,7 +96,7 @@ export default function ExperienceCard({
 
       {/* Tier Information */}
       <div className="space-y-2">
-        <div className="text-xs font-medium" style={{ color: 'var(--foreground)', opacity: 0.6 }}>
+        {/* <div className="text-xs font-medium" style={{ color: 'var(--foreground)', opacity: 0.6 }}>
           REDEMPTION TIERS
         </div>
         <div className="text-sm font-medium leading-relaxed" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
@@ -107,7 +107,7 @@ export default function ExperienceCard({
           <div className="text-xs" style={{ color: 'var(--foreground)', opacity: 0.5 }}>
             💰 Spend £{bestMetrics.poundsToSpend.toFixed(0)} to earn enough points
           </div>
-        )}
+        )} */}
         
         {!isLinear && (
           <div className="flex items-center gap-2 text-xs font-semibold mt-2 px-3 py-1 rounded-full" style={{ 
