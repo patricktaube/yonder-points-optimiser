@@ -1,6 +1,9 @@
 // app/lib/airtable.ts
 
 // Define interfaces for Airtable record types
+// -------------------------------------------
+// These interfaces match the structures of the Airtable records
+
 interface AirtableExperienceRecord {
   id: string;
   fields: {
@@ -52,6 +55,15 @@ export const CARD_TYPES = {
 } as const;
 
 export type CardType = keyof typeof CARD_TYPES;
+
+// Badge system interfaces
+export interface BadgeThresholds {
+  bestValueThreshold: number;
+  badDealThreshold: number;
+}
+
+export type BadgeType = 'best-value' | 'bad-deal' | null;
+
 
 export async function getExperiences(): Promise<Experience[]> {
   try {
@@ -194,4 +206,59 @@ export function getBestTier(
     const currentMetrics = calculateValueMetrics(current, cardType);
     return currentMetrics.effectiveReturn > bestMetrics.effectiveReturn ? current : best;
   });
+}
+
+// Calculate global badge thresholds based on all experiences and selected card type
+export function calculateBadgeThresholds(experiences: Experience[], cardType: CardType): BadgeThresholds {
+  // Get all effective return rates across all experiences for the selected card type
+  const allReturnRates: number[] = [];
+  
+  experiences.forEach(experience => {
+    const bestTier = getBestTier(experience.redemptionTiers, cardType);
+    if (bestTier) {
+      const metrics = calculateValueMetrics(bestTier, cardType);
+      allReturnRates.push(metrics.effectiveReturn);
+    }
+  });
+
+  // Sort rates to calculate percentiles
+  allReturnRates.sort((a, b) => a - b);
+
+  if (allReturnRates.length === 0) {
+    return { bestValueThreshold: 2.0, badDealThreshold: 1.6 }; // Fallback values in percentage
+  }
+
+  // Calculate percentiles
+  const getPercentile = (percentile: number) => {
+    const index = Math.ceil((percentile / 100) * allReturnRates.length) - 1;
+    return allReturnRates[Math.max(0, Math.min(index, allReturnRates.length - 1))];
+  };
+
+  return {
+    bestValueThreshold: getPercentile(95), // 95th percentile for "Best Value"
+    badDealThreshold: getPercentile(20),   // 20th percentile for "Bad Deal"
+  };
+}
+
+// Determine what badge (if any) an experience should get
+export function getExperienceBadge(
+  experience: Experience,
+  cardType: CardType,
+  thresholds: BadgeThresholds,
+): BadgeType {
+  const bestTier = getBestTier(experience.redemptionTiers, cardType);
+  if (!bestTier) return null;
+  
+  const metrics = calculateValueMetrics(bestTier, cardType);
+  
+  // Global badges take priority
+  if (metrics.effectiveReturn >= thresholds.bestValueThreshold) {
+    return 'best-value';
+  }
+  
+  if (metrics.effectiveReturn <= thresholds.badDealThreshold) {
+    return 'bad-deal';
+  }
+  
+  return null;
 }

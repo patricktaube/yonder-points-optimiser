@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Experience, getCategories, calculateValueMetrics, getBestTier, CARD_TYPES, CardType } from '../lib/airtable';
+import { Experience, getCategories, calculateValueMetrics, getBestTier, CARD_TYPES, CardType, calculateBadgeThresholds } from '../lib/airtable';
 import ExperienceCard from './ExperienceCard';
 
 interface ExperiencesListProps {
@@ -34,6 +34,9 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
   const filteredExperiences = selectedCategory
     ? experiences.filter((exp) => exp.category === selectedCategory)
     : experiences;
+
+  // Calculate badge thresholds for the selected card type
+  const badgeThresholds = calculateBadgeThresholds(experiences, selectedCardType);
 
   // Group experiences by category and maintain the same order as categories
   const experiencesByCategory: Record<string, Experience[]> = {};
@@ -67,26 +70,6 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 
     experiencesByCategory[category] = categoryExperiences;
   });
-
-  // Helper function to check if an experience is uniquely the best in its category
-  const isUniquelyBest = (experience: Experience, categoryExperiences: Experience[]): boolean => {
-    if (categoryExperiences.length < 2) return false;
-    
-    const bestTier = getBestTier(experience.redemptionTiers, selectedCardType);
-    if (!bestTier) return false;
-    
-    const bestMetrics = calculateValueMetrics(bestTier, selectedCardType);
-    
-    const otherExperiences = categoryExperiences.filter(exp => exp.id !== experience.id);
-    const hasTie = otherExperiences.some(exp => {
-      const otherBestTier = getBestTier(exp.redemptionTiers, selectedCardType);
-      if (!otherBestTier) return false;
-      const otherMetrics = calculateValueMetrics(otherBestTier, selectedCardType);
-      return Math.abs(otherMetrics.effectiveReturn - bestMetrics.effectiveReturn) < 0.01;
-    });
-    
-    return !hasTie;
-  };
 
   const toggleCategoryExpansion = (category: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -141,6 +124,27 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                   <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
                 </svg>
               </div>
+            </div>
+          </div>
+        </div>
+
+{/* Badge Legend */}
+        <div className="mb-8 p-4 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.8)' }}>
+          <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--foreground)' }}>
+            Badge Guide:
+          </h3>
+          <div className="flex flex-wrap gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="bg-green-500 text-white px-2 py-1 rounded-full font-bold text-xs">🏆 Best Value</div>
+              <span style={{ color: 'var(--foreground)', opacity: 0.8 }}>
+                Top 5% globally (≥{badgeThresholds.bestValueThreshold.toFixed(1)}% return)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="bg-red-500 text-white px-2 py-1 rounded-full font-bold text-xs">⚠️ Poor Value</div>
+              <span style={{ color: 'var(--foreground)', opacity: 0.8 }}>
+                Bottom 20% globally (≤{badgeThresholds.badDealThreshold.toFixed(1)}% return)
+              </span>
             </div>
           </div>
         </div>
@@ -342,8 +346,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                       key={experience.id}
                       experience={experience}
                       selectedCardType={selectedCardType}
-                      isBestInCategory={index === 0}
-                      isUniquelyBest={index === 0 && isUniquelyBest(experience, categoryExperiences)}
+                      badgeThresholds={badgeThresholds}
                     />
                   ))}
                 </div>
