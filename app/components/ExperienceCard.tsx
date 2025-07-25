@@ -1,20 +1,18 @@
 // app/components/ExperienceCard.tsx
 'use client';
 
-import { Experience, calculateValueMetrics, getBestTier, CardType } from '../lib/airtable';
+import { Experience, calculateValueMetrics, getBestTier, CardType, BadgeThresholds, getExperienceBadge } from '../lib/airtable';
 
 interface ExperienceCardProps {
   experience: Experience;
   selectedCardType: CardType;
-  isBestInCategory: boolean;
-  isUniquelyBest: boolean;
+  badgeThresholds?: BadgeThresholds;
 }
 
 export default function ExperienceCard({
   experience,
   selectedCardType,
-  isBestInCategory,
-  isUniquelyBest,
+  badgeThresholds,
 }: ExperienceCardProps) {
   // Check if redemption rates are linear
   const valueMetrics = experience.redemptionTiers.map(tier => 
@@ -31,6 +29,13 @@ export default function ExperienceCard({
   const bestTier = getBestTier(experience.redemptionTiers, selectedCardType);
   const bestMetrics = bestTier ? calculateValueMetrics(bestTier, selectedCardType) : null;
 
+  // Get badge type
+  const badgeType = badgeThresholds ? getExperienceBadge(
+    experience, 
+    selectedCardType, 
+    badgeThresholds, 
+  ): null ;
+
   // Format tiers display - more readable
   const tiersDisplay = experience.redemptionTiers
     .sort((a, b) => a.pointsRequired - b.pointsRequired)
@@ -45,6 +50,34 @@ export default function ExperienceCard({
     return '💫'; // Okay
   };
 
+  // Render badge
+  const renderBadge = () => {
+    if (!badgeType) return null;
+
+    switch (badgeType) {
+      case 'best-value':
+        return (
+          <div 
+            className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg"
+            style={{ backgroundColor: '#10B981' }}
+          >
+            🏆 Great Value
+          </div>
+        );
+      case 'bad-deal':
+        return (
+          <div 
+            className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg"
+            style={{ backgroundColor: '#EF4444' }}
+          >
+            ⚠️ Bad Deal
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <div 
       className="rounded-2xl p-4 relative hover:shadow-xl transition-all duration-300 hover:scale-102 cursor-pointer"
@@ -54,14 +87,7 @@ export default function ExperienceCard({
         boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
       }}
     >
-      {isBestInCategory && isUniquelyBest && (
-        <div 
-          className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg best-value-badge"
-          style={{ backgroundColor: 'var(--yonder-sage)' }}
-        >
-          🏆 Best Value
-        </div>
-      )}
+      {renderBadge()}
 
       {/* Experience Name with Emoji */}
       <div className="mb-1">
