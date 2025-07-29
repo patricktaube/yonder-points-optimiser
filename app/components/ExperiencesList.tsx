@@ -2,6 +2,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useMemo } from 'react';
 import { Experience, getCategories, calculateValueMetrics, getBestTier, CARD_TYPES, CardType, calculateBadgeThresholds } from '../lib/airtable';
 import ExperienceCard from './ExperienceCard';
 
@@ -36,8 +37,10 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
     : experiences;
 
   // Calculate badge thresholds for the selected card type
-  const badgeThresholds = calculateBadgeThresholds(experiences, selectedCardType);
-
+const badgeThresholds = useMemo(() => 
+  calculateBadgeThresholds(experiences, selectedCardType), 
+  [experiences, selectedCardType]
+);
   // Group experiences by category and maintain the same order as categories
   const experiencesByCategory: Record<string, Experience[]> = {};
   
@@ -107,10 +110,6 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                   color: 'var(--yonder-navy)',
                   borderBottomStyle: 'solid',
                   borderBottomWidth: '2px',
-                //   textDecoration: 'underline',
-                //   textDecorationStyle: 'solid',
-                //   textDecorationColor: 'var(--yonder-orange)',
-                //   textUnderlineOffset: '2px'
                 }}
               >
                 {Object.entries(CARD_TYPES).map(([key, cardType]) => (

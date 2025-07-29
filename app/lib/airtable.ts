@@ -64,6 +64,34 @@ export interface BadgeThresholds {
 
 export type BadgeType = 'best-value' | 'bad-deal' | null;
 
+// Constants for magic numbers used in the code; this is useful for performance optimisation.
+// The code won't have to recalculate these values every time.
+
+const VALUE_THRESHOLDS = {
+    AMAZING: 1.95,
+    GREAT: 1.8,
+    GOOD: 1.5,
+} as const;
+
+const BADGE_PERCENTILES = {
+    BEST_VALUE: 95, // 95th percentile for best value
+    BAD_DEAL: 20,   // 20th percentile for bad deal
+} as const;
+
+const FALLBACK_THRESHOLDS = {
+    BEST_VALUE: 2.0,
+    BAD_DEAL:1.6
+} as const;
+
+// Validate environment variables
+function validateEnvironment() {
+  const requiredVars = ['AIRTABLE_PERSONAL_ACCESS_TOKEN', 'AIRTABLE_BASE_ID'];
+  const missing = requiredVars.filter(varName => !process.env[varName]);
+  
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}`);
+  }
+}
 
 export async function getExperiences(): Promise<Experience[]> {
   try {
@@ -81,7 +109,12 @@ export async function getExperiences(): Promise<Experience[]> {
     const experiencesResponse = await fetch(experiencesUrl.toString(), { headers });
 
     if (!experiencesResponse.ok) {
-      console.error('Experiences API error:', await experiencesResponse.text());
+      const errorText = await experiencesResponse.text();
+      console.error('Experiences API error status:', experiencesResponse.status);
+      // Don't log the full error text in production to avoid information leakage, particularly of API keys
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Experiences API error details:', errorText);
+      }
       throw new Error(`Experiences API error: ${experiencesResponse.status}`);
     }
 
@@ -89,18 +122,19 @@ export async function getExperiences(): Promise<Experience[]> {
 
     // Fetch redemption tiers
     const tiersUrl = new URL(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Redemption%20Tiers`);
-    tiersUrl.searchParams.set('sort[0][field]', 'Tier'); // Changed from 'Tier_Number' to 'Tier'
+    tiersUrl.searchParams.set('sort[0][field]', 'Tier');
 
     const tiersResponse = await fetch(tiersUrl.toString(), { headers });
 
     if (!tiersResponse.ok) {
-      console.error('Tiers API error:', await tiersResponse.text());
+      const errorText = await tiersResponse.text();
+      console.error('Tiers API error status:', tiersResponse.status);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Tiers API error details:', errorText);
+      }
       throw new Error(`Tiers API error: ${tiersResponse.status}`);
     }
-
     const tiersData = await tiersResponse.json() as AirtableResponse<AirtableTierRecord>;
-
-    console.log('Sample tier record:', tiersData.records[0]); // Debug log
 
     // Process experiences
     const experiences: Experience[] = experiencesData.records.map((record) => ({
@@ -115,7 +149,7 @@ export async function getExperiences(): Promise<Experience[]> {
 
     // Map tiers to experiences
     tiersData.records.forEach((tierRecord) => {
-      const experienceIds = tierRecord.fields.Experiences; // Changed from 'Experience' to 'Experiences'
+      const experienceIds = tierRecord.fields.Experiences;
       if (!experienceIds || experienceIds.length === 0) return;
 
       const experienceId = experienceIds[0];
@@ -208,6 +242,14 @@ export function getBestTier(
   });
 }
 
+// Calculate percentile helper function
+function getPercentile(sortedArray: number[], percentile: number): number {
+  if (sortedArray.length === 0) return 0;
+  
+  const index = Math.ceil((percentile / 100) * sortedArray.length) - 1;
+  return sortedArray[Math.max(0, Math.min(index, sortedArray.length - 1))];
+}
+
 // Calculate global badge thresholds based on all experiences and selected card type
 export function calculateBadgeThresholds(experiences: Experience[], cardType: CardType): BadgeThresholds {
   // Get all effective return rates across all experiences for the selected card type
@@ -225,18 +267,15 @@ export function calculateBadgeThresholds(experiences: Experience[], cardType: Ca
   allReturnRates.sort((a, b) => a - b);
 
   if (allReturnRates.length === 0) {
-    return { bestValueThreshold: 2.0, badDealThreshold: 1.6 }; // Fallback values in percentage
+    return { 
+      bestValueThreshold: FALLBACK_THRESHOLDS.BEST_VALUE, 
+      badDealThreshold: FALLBACK_THRESHOLDS.BAD_DEAL 
+    };
   }
 
-  // Calculate percentiles
-  const getPercentile = (percentile: number) => {
-    const index = Math.ceil((percentile / 100) * allReturnRates.length) - 1;
-    return allReturnRates[Math.max(0, Math.min(index, allReturnRates.length - 1))];
-  };
-
   return {
-    bestValueThreshold: getPercentile(95), // 95th percentile for "Best Value"
-    badDealThreshold: getPercentile(20),   // 20th percentile for "Bad Deal"
+    bestValueThreshold: getPercentile(allReturnRates, BADGE_PERCENTILES.BEST_VALUE),
+    badDealThreshold: getPercentile(allReturnRates, BADGE_PERCENTILES.BAD_DEAL),
   };
 }
 
@@ -251,7 +290,7 @@ export function getExperienceBadge(
   
   const metrics = calculateValueMetrics(bestTier, cardType);
   
-  // Global badges take priority
+  // Global badges based on percentile thresholds
   if (metrics.effectiveReturn >= thresholds.bestValueThreshold) {
     return 'best-value';
   }
@@ -261,4 +300,12 @@ export function getExperienceBadge(
   }
   
   return null;
+}
+
+// Helper function to get value emoji based on return rate
+export function getValueEmoji(returnRate: number): string {
+  if (returnRate >= VALUE_THRESHOLDS.AMAZING) return '🔥';
+  if (returnRate >= VALUE_THRESHOLDS.GREAT) return '⭐';
+  if (returnRate >= VALUE_THRESHOLDS.GOOD) return '👍';
+  return '💫';
 }

@@ -1,7 +1,8 @@
 // app/components/ExperienceCard.tsx
 'use client';
 
-import { Experience, calculateValueMetrics, getBestTier, CardType, BadgeThresholds, getExperienceBadge } from '../lib/airtable';
+import { use, useMemo } from 'react';   
+import { Experience, calculateValueMetrics, getBestTier, CardType, BadgeThresholds, getExperienceBadge, getValueEmoji } from '../lib/airtable';
 
 interface ExperienceCardProps {
   experience: Experience;
@@ -14,12 +15,13 @@ export default function ExperienceCard({
   selectedCardType,
   badgeThresholds,
 }: ExperienceCardProps) {
-  // Check if redemption rates are linear
-  const valueMetrics = experience.redemptionTiers.map(tier => 
-    calculateValueMetrics(tier, selectedCardType)
-  );
+    const memoizedMetrics = useMemo(() => {
+        const valueMetrics = experience.redemptionTiers.map(tier => 
+            calculateValueMetrics(tier, selectedCardType)
+        );
 
-  const isLinear = valueMetrics.length >= 2 &&
+  // Check if redemption rates are linear
+    const isLinear = valueMetrics.length >= 2 &&
     valueMetrics.every((metrics, index) => {
       if (index === 0) return true;
       return Math.abs(metrics.valuePerKPoints - valueMetrics[0].valuePerKPoints) < 0.01;
@@ -36,20 +38,16 @@ export default function ExperienceCard({
     badgeThresholds, 
   ): null ;
 
-  // Format tiers display - more readable
-  const tiersDisplay = experience.redemptionTiers
-    .sort((a, b) => a.pointsRequired - b.pointsRequired)
-    .map(tier => `${(tier.pointsRequired / 1000).toFixed(0)}k → £${tier.poundValue}`)
-    .join('  •  ');
+   return {
+      isLinear,
+      bestTier,
+      bestMetrics,
+      badgeType
+    };
+  }, [experience, selectedCardType, badgeThresholds]);
 
-  // Get value color based on return rate
-  const getValueEmoji = (returnRate: number) => {
-    if (returnRate >= 1.95) return '🔥'; // Amazing
-    if (returnRate >= 1.8) return '⭐'; // Great
-    if (returnRate >= 1.5) return '👍'; // Good
-    return '💫'; // Okay
-  };
-
+  const { isLinear, bestMetrics, badgeType } = memoizedMetrics;
+  
   // Render badge
   const renderBadge = () => {
     if (!badgeType) return null;
@@ -122,19 +120,6 @@ export default function ExperienceCard({
 
       {/* Tier Information */}
       <div className="space-y-2">
-        {/* <div className="text-xs font-medium" style={{ color: 'var(--foreground)', opacity: 0.6 }}>
-          REDEMPTION TIERS
-        </div>
-        <div className="text-sm font-medium leading-relaxed" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
-          {tiersDisplay}
-        </div>
-        
-        {bestMetrics && (
-          <div className="text-xs" style={{ color: 'var(--foreground)', opacity: 0.5 }}>
-            💰 Spend £{bestMetrics.poundsToSpend.toFixed(0)} to earn enough points
-          </div>
-        )} */}
-        
         {!isLinear && (
           <div className="flex items-center gap-2 text-xs font-semibold mt-2 px-3 py-1 rounded-full" style={{ 
             backgroundColor: 'rgba(218, 97, 32, 0.1)',
