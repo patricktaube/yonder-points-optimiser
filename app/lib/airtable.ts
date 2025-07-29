@@ -301,11 +301,3 @@ export function getExperienceBadge(
   
   return null;
 }
-
-// Helper function to get value emoji based on return rate
-export function getValueEmoji(returnRate: number): string {
-  if (returnRate >= VALUE_THRESHOLDS.AMAZING) return '🔥';
-  if (returnRate >= VALUE_THRESHOLDS.GREAT) return '⭐';
-  if (returnRate >= VALUE_THRESHOLDS.GOOD) return '👍';
-  return '💫';
-}
