@@ -188,7 +188,7 @@ const badgeThresholds = useMemo(() =>
         <div className="mb-8">
           <div className="text-center mb-6">
             <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
-              This month's best redemption rates
+                This month&apos;s best redemption rates
             </h2>
            </div>
 
