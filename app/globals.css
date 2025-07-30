@@ -6,7 +6,8 @@
   --foreground: #1e293b; /* Dark slate for text */
   --yonder-navy: #1e293b; /* Dark blue accent */
   --yonder-orange: #E88267; /* Burnt orange */
-  --yonder-sage: #166534; /* Forest/sage green for badges */
+  --badge-sage: #13542c; /* Forest/sage green for badges */
+  --badge-red: #a0310f;
   --card-background: #ffffff;
   --border-color: #e2e8f0;
 }
@@ -34,5 +35,5 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'manrope', system-ui, -apple-system, sans-serif;
 }

@@ -1,8 +1,8 @@
 // app/components/ExperienceCard.tsx
 'use client';
 
-import { use, useMemo } from 'react';   
-import { Experience, calculateValueMetrics, getBestTier, CardType, BadgeThresholds, getExperienceBadge, getValueEmoji } from '../lib/airtable';
+import { use, useMemo, useState, useRef } from 'react';   
+import { Experience, calculateValueMetrics, getBestTier, CardType, BadgeThresholds, getExperienceBadge } from '../lib/airtable';
 
 interface ExperienceCardProps {
   experience: Experience;
@@ -15,30 +15,35 @@ export default function ExperienceCard({
   selectedCardType,
   badgeThresholds,
 }: ExperienceCardProps) {
-    const memoizedMetrics = useMemo(() => {
-        const valueMetrics = experience.redemptionTiers.map(tier => 
-            calculateValueMetrics(tier, selectedCardType)
-        );
+  // Cursor tracking state
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  // Check if redemption rates are linear
+  const memoizedMetrics = useMemo(() => {
+    const valueMetrics = experience.redemptionTiers.map(tier => 
+      calculateValueMetrics(tier, selectedCardType)
+    );
+
+    // Check if redemption rates are linear
     const isLinear = valueMetrics.length >= 2 &&
-    valueMetrics.every((metrics, index) => {
-      if (index === 0) return true;
-      return Math.abs(metrics.valuePerKPoints - valueMetrics[0].valuePerKPoints) < 0.01;
-    });
+      valueMetrics.every((metrics, index) => {
+        if (index === 0) return true;
+        return Math.abs(metrics.valuePerKPoints - valueMetrics[0].valuePerKPoints) < 0.01;
+      });
 
-  // Get best tier value for display
-  const bestTier = getBestTier(experience.redemptionTiers, selectedCardType);
-  const bestMetrics = bestTier ? calculateValueMetrics(bestTier, selectedCardType) : null;
+    // Get best tier value for display
+    const bestTier = getBestTier(experience.redemptionTiers, selectedCardType);
+    const bestMetrics = bestTier ? calculateValueMetrics(bestTier, selectedCardType) : null;
 
-  // Get badge type
-  const badgeType = badgeThresholds ? getExperienceBadge(
-    experience, 
-    selectedCardType, 
-    badgeThresholds, 
-  ): null ;
+    // Get badge type
+    const badgeType = badgeThresholds ? getExperienceBadge(
+      experience, 
+      selectedCardType, 
+      badgeThresholds, 
+    ): null ;
 
-   return {
+    return {
       isLinear,
       bestTier,
       bestMetrics,
@@ -47,6 +52,26 @@ export default function ExperienceCard({
   }, [experience, selectedCardType, badgeThresholds]);
 
   const { isLinear, bestMetrics, badgeType } = memoizedMetrics;
+
+  // Cursor tracking handlers
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    
+    const rect = cardRef.current.getBoundingClientRect();
+    setMousePosition({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
+
+  const handleMouseEnter = () => {
+    setIsHovered(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsHovered(false);
+    setMousePosition({ x: 0, y: 0 });
+  };
   
   // Render badge
   const renderBadge = () => {
@@ -56,19 +81,19 @@ export default function ExperienceCard({
       case 'best-value':
         return (
           <div 
-            className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg"
-            style={{ backgroundColor: '#10B981' }}
+            className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg z-10"
+            style={{ backgroundColor: 'var(--badge-sage)' }}
           >
-            🏆 Great Value
+            Great Value
           </div>
         );
       case 'bad-deal':
         return (
           <div 
-            className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg"
-            style={{ backgroundColor: '#EF4444' }}
+            className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg z-10"
+            style={{ backgroundColor: 'var(--badge-red)' }}
           >
-            ⚠️ Bad Deal
+            Bad Deal
           </div>
         );
       default:
@@ -78,6 +103,10 @@ export default function ExperienceCard({
 
   return (
     <div 
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       className="rounded-2xl p-4 relative hover:shadow-xl transition-all duration-300 hover:scale-102 cursor-pointer"
       style={{ 
         backgroundColor: 'var(--card-background)',
@@ -85,23 +114,42 @@ export default function ExperienceCard({
         boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
       }}
     >
+      {/* Cursor glow effect - desktop only */}
+      {isHovered && (
+        <div
+          className="absolute pointer-events-none transition-opacity duration-300 hidden md:block"
+          style={{
+            left: mousePosition.x,
+            top: mousePosition.y,
+            width: 200,
+            height: 200,
+            background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)',
+            borderRadius: '50%',
+            transform: 'translate(-50%, -50%)',
+          }}
+        />
+      )}
+
       {renderBadge()}
 
-      {/* Experience Name with Emoji */}
-      <div className="mb-1">
-        <h3 className="text-xl font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--foreground)' }}>
-          {bestMetrics && (
-            <span className="text-2xl">{getValueEmoji(bestMetrics.effectiveReturn)}</span>
-          )}
-          <span className="line-clamp-2">{experience.name}</span>
+      {/* Darker Peach Title Bar */}
+      <div 
+        className="-mx-4 -mt-4 px-4 py-3 mb-3 rounded-t-xl"
+        style={{ 
+          backgroundColor: '#f4b885', // Darker peach
+        }}
+      >
+        <h3 className="text-lg font-bold line-clamp-2" style={{ color: 'var(--yonder-navy)' }}>
+          {experience.name}
         </h3>
-        
-        {experience.description && (
-          <p className="text-sm leading-relaxed line-clamp-2" style={{ color: 'var(--foreground)', opacity: 0.7 }}>
-            {experience.description}
-          </p>
-        )}
       </div>
+
+      {/* Rest of content stays the same */}
+      {experience.description && (
+        <p className="text-sm leading-relaxed line-clamp-2 mb-3" style={{ color: 'var(--foreground)', opacity: 0.7 }}>
+          {experience.description}
+        </p>
+      )}
 
       {/* Main Value Display */}
       {bestMetrics && (

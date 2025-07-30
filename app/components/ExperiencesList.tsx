@@ -17,7 +17,7 @@ const categoryIcons: Record<string, string> = {
   "Flights": '✈️',
   'Hotels': '🏨',
   'Shopping': '🛍️',
-  'Fit & Well': '💪',
+  'Fit&Well': '💪',
   'Theatre': '🎭',
   'Lounges': '🛋️',
   'Treats': '🥐',
@@ -30,6 +30,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
   const [selectedCardType, setSelectedCardType] = useState<CardType>('credit_free');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   
   const categories = getCategories(experiences);
   const filteredExperiences = selectedCategory
@@ -84,6 +85,8 @@ const badgeThresholds = useMemo(() =>
     setExpandedCategories(newExpanded);
   };
 
+  const selectedCard = CARD_TYPES[selectedCardType];
+
   return (
     <div style={{ backgroundColor: '#fef7f0' }} className="min-h-screen">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -98,65 +101,98 @@ const badgeThresholds = useMemo(() =>
             </p>
           </div>
           
-          {/* Card Type Fill-in-the-blank Style */}
-          <div className="flex items-center gap-2 text-lg" style={{ color: 'var(--foreground)' }}>
-            <span>My Yonder card:</span>
-            <div className="relative">
-              <select
-                value={selectedCardType}
-                onChange={(e) => setSelectedCardType(e.target.value as CardType)}
-                className="appearance-none bg-transparent border-0 border-b-2 border-gray-400 px-2 py-1 text-lg font-medium hover:border-gray-600 focus:outline-none focus:border-blue-500 pr-6"
-                style={{ 
-                  color: 'var(--yonder-navy)',
-                  borderBottomStyle: 'solid',
-                  borderBottomWidth: '2px',
-                }}
-              >
-                {Object.entries(CARD_TYPES).map(([key, cardType]) => (
-                  <option key={key} value={key}>
-                    {cardType.name}
-                  </option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center">
-                <svg className="fill-current h-4 w-4" style={{ color: 'var(--yonder-navy)' }} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                  <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
-                </svg>
+          {/* Pill-style Card Type Selector */}
+          <div className="relative">
+            {/* Desktop version - Large pill container */}
+            <div className="hidden sm:inline-flex items-center bg-white border-2 rounded-full px-3 py-2 shadow-lg" style={{ borderColor: 'var(--yonder-orange)' }}>
+              <span className="text-sm font-medium px-2" style={{ color: 'var(--foreground)' }}>
+                Card Type:
+              </span>
+              
+              {/* Dropdown pill - smaller pill inside */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-full transition-all duration-200 hover:shadow-md min-w-32"
+                  style={{ backgroundColor: 'var(--yonder-orange)' }}
+                >
+                  <span className="text-sm">{selectedCard?.name}</span>
+                  <svg 
+                    className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
               </div>
             </div>
+
+            {/* Mobile version - Compact pill with card icon */}
+            <div className="sm:hidden">
+              <button
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                className="flex items-center gap-2 text-white font-semibold px-3 py-2 rounded-full transition-all duration-200 hover:shadow-md shadow-lg"
+                style={{ backgroundColor: 'var(--yonder-orange)' }}
+              >
+                <span className="text-base">💳</span>
+                <svg 
+                  className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Dropdown menu - same for both desktop and mobile */}
+            {isDropdownOpen && (
+              <div className="absolute top-full right-0 mt-2 w-56 bg-white border-2 rounded-xl shadow-lg z-50" style={{ borderColor: 'var(--yonder-orange)' }}>
+                {Object.entries(CARD_TYPES).map(([key, cardType]) => (
+                  <button
+                    key={key}
+                    onClick={() => {
+                      setSelectedCardType(key as CardType);
+                      setIsDropdownOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl ${
+                      selectedCardType === key ? 'text-white' : 'hover:bg-orange-50'
+                    }`}
+                    style={{ 
+                      backgroundColor: selectedCardType === key ? 'var(--yonder-orange)' : 'transparent',
+                      color: selectedCardType === key ? 'white' : 'var(--foreground)'
+                    }}
+                  >
+                    <div className="font-semibold">{cardType.name}</div>
+                    <div className="text-sm opacity-75">{cardType.pointsPerPound} pts/£</div>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Click outside handler */}
+            {isDropdownOpen && (
+              <div 
+                className="fixed inset-0 z-40" 
+                onClick={() => setIsDropdownOpen(false)}
+              />
+            )}
           </div>
         </div>
 
-{/* Badge Legend */}
-        <div className="mb-8 p-4 rounded-xl" style={{ backgroundColor: 'rgba(255,255,255,0.8)' }}>
-          <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--foreground)' }}>
-            Badge Guide:
-          </h3>
-          <div className="flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="bg-green-500 text-white px-2 py-1 rounded-full font-bold text-xs">🏆 Best Value</div>
-              <span style={{ color: 'var(--foreground)', opacity: 0.8 }}>
-                Top 5% globally (≥{badgeThresholds.bestValueThreshold.toFixed(1)}% return)
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="bg-red-500 text-white px-2 py-1 rounded-full font-bold text-xs">⚠️ Poor Value</div>
-              <span style={{ color: 'var(--foreground)', opacity: 0.8 }}>
-                Bottom 20% globally (≤{badgeThresholds.badDealThreshold.toFixed(1)}% return)
-              </span>
-            </div>
-          </div>
-        </div>
 
 {/* Top 3 Overall Best Redemptions */}
-        <div className="mb-12">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold mb-3" style={{ color: 'var(--foreground)' }}>
-              🏆 Top 3 Best Redemptions
+        <div className="mb-8">
+          <div className="text-center mb-6">
+            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
+              This month's best redemption rates
             </h2>
            </div>
 
-          <div className="grid gap-6 md:grid-cols-3 max-w-5xl mx-auto">
+          <div className="grid gap-4 md:grid-cols-3 max-w-4xl mx-auto">
             {(() => {
               // Get all experiences with their best tiers and calculate metrics
               const allExperiencesWithMetrics = experiences
@@ -198,8 +234,8 @@ const badgeThresholds = useMemo(() =>
                 return (
                   <div
                     key={experience.id}
-                    className="bg-white rounded-2xl shadow-xl p-6 relative transform hover:scale-105 transition-all duration-200"
-                    style={{ border: `3px solid ${rankColors[index]}` }}
+                    className="bg-white rounded-2xl shadow-xl p-4 relative transform hover:scale-105 transition-all duration-200"
+                    style={{ border: `2px solid ${rankColors[index]}` }}
                   >
                     {/* Rank Badge */}
                     <div 
@@ -210,8 +246,8 @@ const badgeThresholds = useMemo(() =>
                     </div>
 
                       {/* Experience Info */}
-                    <div className="mb-4">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="mb-1">
+                      <div className="flex items-center gap-2 mb-1">
                         <span className="text-2xl">{categoryIcons[experience.category] || categoryIcons.Default}</span>
                         <span className="text-sm font-medium px-2 py-1 rounded-full" style={{ 
                           backgroundColor: 'var(--light-peach)', 
@@ -224,7 +260,7 @@ const badgeThresholds = useMemo(() =>
                         {experience.name}
                       </h3>
                       {experience.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">
+                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
                           {experience.description}
                         </p>
                       )}
@@ -243,12 +279,20 @@ const badgeThresholds = useMemo(() =>
 
                       <div className="text-center">
                         <div className="text-md font-semibold" style={{ color: 'var(--foreground)' }}>
-                          {metrics.effectiveReturn.toFixed(1)}% return rate
+                          {metrics.effectiveReturn.toFixed(1)}% return, 
+                          <span 
+                            className="font-bold"
+                            style={{ color: metrics.effectiveReturn > averageReturn ? '#10B981' : '#EF4444' }}
+                          >
+                            {(metrics.effectiveReturn - averageReturn).toFixed(1)}% 
+                            {metrics.effectiveReturn > averageReturn ? ' more than average' : ''}
+
+                            </span>
                         </div>
                       </div>
 
                      {/* Comparison to Average - Simplified */}
-                      <div className="pt-3 border-t border-gray-200">
+                      {/* <div className="pt-3 border-t border-gray-200">
                         <div className="flex items-center justify-center gap-2 text-sm">
                           <span className="text-gray-600">vs average:</span>
                           <span 
@@ -259,7 +303,7 @@ const badgeThresholds = useMemo(() =>
                             {(metrics.effectiveReturn - averageReturn).toFixed(1)}%
                           </span>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 );
@@ -270,7 +314,7 @@ const badgeThresholds = useMemo(() =>
 
         {/* Responsive Category Grid - Same order as sections */}
         <div className="mb-10">
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 justify-items-center">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-4 justify-items-center">
             <button
               onClick={() => setSelectedCategory(null)}
               className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-base font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full justify-center ${
@@ -339,7 +383,7 @@ const badgeThresholds = useMemo(() =>
                   )}
                 </div>
 
-                <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-6 grid-cols-2 xl:grid-cols-3">
                   {displayExperiences.map((experience, index) => (
                     <ExperienceCard
                       key={experience.id}
