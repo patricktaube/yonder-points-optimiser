@@ -424,6 +424,17 @@ const badgeThresholds = useMemo(() =>
             </p>
           </div>
         )}
+      {/* Legal Disclaimer */}
+        <div className="mt-16 pt-8 border-t border-gray-300">
+          <p className="text-center text-sm text-gray-600 max-w-4xl mx-auto leading-relaxed">
+            Made with ❤️ for the Yonder community.
+            <br />
+            <br />
+            This is an unofficial, third-party tool not affiliated with or endorsed by Yonder Technology Ltd. 
+            All Yonder trademarks and service marks belong to Yonder Technology Ltd. 
+            This tool is provided for informational purposes only.
+          </p>
+        </div>
       </div>
     </div>
   );
