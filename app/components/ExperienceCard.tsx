@@ -82,18 +82,18 @@ export default function ExperienceCard({
         return (
           <div 
             className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg z-10"
-            style={{ backgroundColor: '#10B981' }}
+            style={{ backgroundColor: 'var(--badge-sage)' }}
           >
-            🏆 Great Value
+            Great Value
           </div>
         );
       case 'bad-deal':
         return (
           <div 
             className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg z-10"
-            style={{ backgroundColor: '#EF4444' }}
+            style={{ backgroundColor: 'var(--badge-red)' }}
           >
-            ⚠️ Bad Deal
+            Bad Deal
           </div>
         );
       default:
