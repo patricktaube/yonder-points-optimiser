@@ -38,10 +38,11 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
     : experiences;
 
   // Calculate badge thresholds for the selected card type
-const badgeThresholds = useMemo(() => 
-  calculateBadgeThresholds(experiences, selectedCardType), 
-  [experiences, selectedCardType]
-);
+  const badgeThresholds = useMemo(() => 
+    calculateBadgeThresholds(experiences, selectedCardType), 
+    [experiences, selectedCardType]
+  );
+  
   // Group experiences by category and maintain the same order as categories
   const experiencesByCategory: Record<string, Experience[]> = {};
   
@@ -89,34 +90,52 @@ const badgeThresholds = useMemo(() =>
 
   return (
     <div style={{ backgroundColor: '#fef7f0' }} className="min-h-screen">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header with Card Type Dropdown in Top Right */}
-        <div className="flex justify-between items-start mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-4" style={{ color: 'var(--foreground)' }}>
-              Yonder Points Optimiser
-            </h1>
-            <p className="text-lg" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
-              Find the best-value redemptions for your points!
-            </p>
-          </div>
-          
-          {/* Pill-style Card Type Selector */}
-          <div className="relative">
-            {/* Desktop version - Large pill container */}
-            <div className="hidden sm:inline-flex items-center bg-white border-2 rounded-full px-3 py-2 shadow-lg" style={{ borderColor: 'var(--yonder-orange)' }}>
-              <span className="text-sm font-medium px-2" style={{ color: 'var(--foreground)' }}>
-                Card Type:
-              </span>
-              
-              {/* Dropdown pill - smaller pill inside */}
-              <div className="relative">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-50 border-b border-orange-200" style={{ backgroundColor: '#fef7f0' }}>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-2xl sm:text-4xl font-bold" style={{ color: 'var(--foreground)' }}>
+                Yonder Points Optimiser
+              </h1>
+            </div>
+            
+            {/* Pill-style Card Type Selector */}
+            <div className="relative">
+              {/* Desktop version - Large pill container */}
+              <div className="hidden sm:inline-flex items-center bg-white border-2 rounded-full px-3 py-2 shadow-lg" style={{ borderColor: 'var(--yonder-orange)' }}>
+                <span className="text-sm font-medium px-2" style={{ color: 'var(--foreground)' }}>
+                  Card Type:
+                </span>
+                
+                {/* Dropdown pill - smaller pill inside */}
+                <div className="relative">
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-full transition-all duration-200 hover:shadow-md min-w-32"
+                    style={{ backgroundColor: 'var(--yonder-orange)' }}
+                  >
+                    <span className="text-sm">{selectedCard?.name}</span>
+                    <svg 
+                      className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              {/* Mobile version - Compact pill with card icon */}
+              <div className="sm:hidden">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-full transition-all duration-200 hover:shadow-md min-w-32"
+                  className="flex items-center gap-2 text-white font-semibold px-3 py-2 rounded-full transition-all duration-200 hover:shadow-md shadow-lg"
                   style={{ backgroundColor: 'var(--yonder-orange)' }}
                 >
-                  <span className="text-sm">{selectedCard?.name}</span>
+                  <span className="text-base">💳</span>
                   <svg 
                     className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
                     fill="none" 
@@ -127,64 +146,62 @@ const badgeThresholds = useMemo(() =>
                   </svg>
                 </button>
               </div>
+
+              {/* Dropdown menu - same for both desktop and mobile */}
+              {isDropdownOpen && (
+                <div className="absolute top-full right-0 mt-2 w-56 bg-white border-2 rounded-xl shadow-lg z-50" style={{ borderColor: 'var(--yonder-orange)' }}>
+                  {Object.entries(CARD_TYPES).map(([key, cardType]) => (
+                    <button
+                      key={key}
+                      onClick={() => {
+                        setSelectedCardType(key as CardType);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl ${
+                        selectedCardType === key ? 'text-white' : 'hover:bg-orange-50'
+                      }`}
+                      style={{ 
+                        backgroundColor: selectedCardType === key ? 'var(--yonder-orange)' : 'transparent',
+                        color: selectedCardType === key ? 'white' : 'var(--foreground)'
+                      }}
+                    >
+                      <div className="font-semibold">{cardType.name}</div>
+                      <div className="text-sm opacity-75">{cardType.pointsPerPound} pts/£</div>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Click outside handler */}
+              {isDropdownOpen && (
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setIsDropdownOpen(false)}
+                />
+              )}
             </div>
+          </div>
+        </div>
+      </div>
 
-            {/* Mobile version - Compact pill with card icon */}
-            <div className="sm:hidden">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="flex items-center gap-2 text-white font-semibold px-3 py-2 rounded-full transition-all duration-200 hover:shadow-md shadow-lg"
-                style={{ backgroundColor: 'var(--yonder-orange)' }}
-              >
-                <span className="text-base">💳</span>
-                <svg 
-                  className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-            </div>
+      {/* Main Content */}
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tagline */}
+        {/* <div className='text-center mb-8'>
+            <p className="text-lg" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
+                Find the best-value redemptions for your points!
+            </p>
+        </div> */}
 
-            {/* Dropdown menu - same for both desktop and mobile */}
-            {isDropdownOpen && (
-              <div className="absolute top-full right-0 mt-2 w-56 bg-white border-2 rounded-xl shadow-lg z-50" style={{ borderColor: 'var(--yonder-orange)' }}>
-                {Object.entries(CARD_TYPES).map(([key, cardType]) => (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      setSelectedCardType(key as CardType);
-                      setIsDropdownOpen(false);
-                    }}
-                    className={`w-full text-left px-4 py-3 transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl ${
-                      selectedCardType === key ? 'text-white' : 'hover:bg-orange-50'
-                    }`}
-                    style={{ 
-                      backgroundColor: selectedCardType === key ? 'var(--yonder-orange)' : 'transparent',
-                      color: selectedCardType === key ? 'white' : 'var(--foreground)'
-                    }}
-                  >
-                    <div className="font-semibold">{cardType.name}</div>
-                    <div className="text-sm opacity-75">{cardType.pointsPerPound} pts/£</div>
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Click outside handler */}
-            {isDropdownOpen && (
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setIsDropdownOpen(false)}
-              />
-            )}
+         <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 mb-12" style={{ backgroundColor: '#FFE5CC' }}>
+          <div className="px-4 sm:px-6 lg:px-8 py-12 text-center">
+            <p className="text-xl sm:text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>
+              Find the best-value redemptions for your points!
+            </p>
           </div>
         </div>
 
-
-{/* Top 3 Overall Best Redemptions */}
+        {/* Top 3 Overall Best Redemptions */}
         <div className="mb-8">
           <div className="text-center mb-6">
             <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
@@ -290,20 +307,6 @@ const badgeThresholds = useMemo(() =>
                             </span>
                         </div>
                       </div>
-
-                     {/* Comparison to Average - Simplified */}
-                      {/* <div className="pt-3 border-t border-gray-200">
-                        <div className="flex items-center justify-center gap-2 text-sm">
-                          <span className="text-gray-600">vs average:</span>
-                          <span 
-                            className="font-bold"
-                            style={{ color: metrics.effectiveReturn > averageReturn ? '#10B981' : '#EF4444' }}
-                          >
-                            {metrics.effectiveReturn > averageReturn ? '+' : ''}
-                            {(metrics.effectiveReturn - averageReturn).toFixed(1)}%
-                          </span>
-                        </div>
-                      </div> */}
                     </div>
                   </div>
                 );
@@ -424,7 +427,8 @@ const badgeThresholds = useMemo(() =>
             </p>
           </div>
         )}
-      {/* Legal Disclaimer */}
+        
+        {/* Legal Disclaimer */}
         <div className="mt-16 pt-8 border-t border-gray-300">
           <p className="text-center text-sm text-gray-600 max-w-4xl mx-auto leading-relaxed">
             Made with ❤️ for the Yonder community.
