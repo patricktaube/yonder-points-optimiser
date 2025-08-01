@@ -27,7 +27,7 @@ const categoryIcons: Record<string, string> = {
 };
 
 export default function ExperiencesList({ experiences }: ExperiencesListProps) {
-  const [selectedCardType, setSelectedCardType] = useState<CardType>('credit_free');
+  const [selectedCardType, setSelectedCardType] = useState<CardType>('credit_paid');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -105,7 +105,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
               {/* Desktop version - Large pill container */}
               <div className="hidden sm:inline-flex items-center bg-white border-2 rounded-full px-3 py-2 shadow-lg" style={{ borderColor: 'var(--yonder-orange)' }}>
                 <span className="text-sm font-medium px-2" style={{ color: 'var(--foreground)' }}>
-                  Card Type:
+                  My Card:
                 </span>
                 
                 {/* Dropdown pill - smaller pill inside */}
@@ -195,7 +195,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 
          <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 mb-12" style={{ backgroundColor: '#FFE5CC' }}>
           <div className="px-4 sm:px-6 lg:px-8 py-12 text-center">
-            <p className="text-xl sm:text-2xl font-semibold" style={{ color: 'var(--foreground)' }}>
+            <p className="text-2xl sm:text-2xl lg:text-4xl font-serif font-semibold" style={{ color: 'var(--foreground)' }}>
               Find the best-value redemptions for your points!
             </p>
           </div>
@@ -317,7 +317,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 
         {/* Responsive Category Grid - Same order as sections */}
         <div className="mb-10">
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-4 justify-items-center">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4 justify-items-center">
             <button
               onClick={() => setSelectedCategory(null)}
               className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-base font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full justify-center ${
@@ -386,7 +386,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                   )}
                 </div>
 
-                <div className="grid gap-6 grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
                   {displayExperiences.map((experience, index) => (
                     <ExperienceCard
                       key={experience.id}

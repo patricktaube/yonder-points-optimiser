@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Manrope, Proza_Libre } from "next/font/google";
+import { Geist, Geist_Mono, Manrope, Lobster_Two } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";   
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,6 +19,12 @@ const manrope = Manrope({
   weight: ["400", "500", "600", "700"],
 });
 
+const lobsterTwo = Lobster_Two({
+  variable: "--font-lobster-two",
+  subsets: ["latin"],
+  weight: ["400"],
+});
+
 export const metadata: Metadata = {
   title: "Yonder Points Optimiser",
   description: "Find the best value redemptions for your Yonder points",
@@ -31,10 +38,11 @@ export default function RootLayout({
   return (
     <html lang="en" style={{ backgroundColor: '#fef7f0' }}>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${manrope.variable} ${lobsterTwo.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ backgroundColor: '#fef7f0', minHeight: '100vh' }}
       >
         {children}
+        <Analytics />
       </body>
     </html>
   );
