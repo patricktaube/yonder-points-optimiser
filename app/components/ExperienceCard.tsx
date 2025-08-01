@@ -29,8 +29,18 @@ export default function ExperienceCard({
     const isLinear = valueMetrics.length >= 2 &&
       valueMetrics.every((metrics, index) => {
         if (index === 0) return true;
-        return Math.abs(metrics.valuePerKPoints - valueMetrics[0].valuePerKPoints) < 0.01;
+        return Math.abs(metrics.valuePerKPoints - valueMetrics[0].valuePerKPoints) < 0.05; // Allow small floating point errors
       });
+
+      if (!isLinear && valueMetrics.length >= 2) {
+  console.log('Non-linear detected for:', experience.name);
+  console.log('Redemption tiers:', experience.redemptionTiers);
+  console.log('Value metrics:', valueMetrics.map((m, i) => ({
+    tier: i + 1,
+    valuePerKPoints: m.valuePerKPoints,
+    diff: i === 0 ? 0 : Math.abs(m.valuePerKPoints - valueMetrics[0].valuePerKPoints)
+  })));
+}
 
     // Get best tier value for display
     const bestTier = getBestTier(experience.redemptionTiers, selectedCardType);

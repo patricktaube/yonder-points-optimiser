@@ -22,6 +22,7 @@ interface AirtableTierRecord {
     Experiences?: string[];
     'Points Required': number;
     'Pound Value': number;
+    'Month (from Experiences)': string; // ADDED: Month field to match your Airtable structure
   };
 }
 
@@ -100,9 +101,12 @@ export async function getExperiences(): Promise<Experience[]> {
       'Content-Type': 'application/json',
     };
 
+    // Constant to fetch the current month
+    const currentMonth = new Date().getMonth() + 1; // e.g., August = 8
+
     // Fetch experiences
     const experiencesUrl = new URL(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Experiences`);
-    experiencesUrl.searchParams.set('filterByFormula', '{Active} = TRUE()');
+    experiencesUrl.searchParams.set('filterByFormula', `AND({Active} = TRUE(), MONTH({Month}) = ${currentMonth})`);
     experiencesUrl.searchParams.set('sort[0][field]', 'Category');
     experiencesUrl.searchParams.set('sort[1][field]', 'Name');
 
@@ -120,8 +124,9 @@ export async function getExperiences(): Promise<Experience[]> {
 
     const experiencesData = await experiencesResponse.json() as AirtableResponse<AirtableExperienceRecord>;
 
-    // Fetch redemption tiers
+    // Fetch redemption tiers - FIXED: Added month filter here too
     const tiersUrl = new URL(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Redemption%20Tiers`);
+    tiersUrl.searchParams.set('filterByFormula', `MONTH({Month (from Experiences)}) = ${currentMonth}`); // ADDED: Month filter
     tiersUrl.searchParams.set('sort[0][field]', 'Tier');
 
     const tiersResponse = await fetch(tiersUrl.toString(), { headers });
@@ -147,26 +152,28 @@ export async function getExperiences(): Promise<Experience[]> {
       redemptionTiers: [],
     }));
 
-    // Map tiers to experiences
+    // Map tiers to experiences - FIXED: Loop through ALL linked experiences
     tiersData.records.forEach((tierRecord) => {
       const experienceIds = tierRecord.fields.Experiences;
       if (!experienceIds || experienceIds.length === 0) return;
 
-      const experienceId = experienceIds[0];
-      const experience = experiences.find((exp) => exp.id === experienceId);
+      // FIXED: Loop through ALL linked experiences, not just the first one
+      experienceIds.forEach((experienceId) => {
+        const experience = experiences.find((exp) => exp.id === experienceId);
 
-      if (experience) {
-        // Convert tier text to number (assuming "Tier 1", "Tier 2", etc.)
-        const tierText = tierRecord.fields.Tier || '';
-        const tierNumber = parseInt(tierText.replace(/\D/g, '')) || 1;
+        if (experience) {
+          // Convert tier text to number (assuming "Tier 1", "Tier 2", etc.)
+          const tierText = tierRecord.fields.Tier || '';
+          const tierNumber = parseInt(tierText.replace(/\D/g, '')) || 1;
 
-        experience.redemptionTiers.push({
-          id: tierRecord.id,
-          tierNumber: tierNumber, // Parsed from Tier field
-          pointsRequired: tierRecord.fields['Points Required'], // Note the space
-          poundValue: tierRecord.fields['Pound Value'], // Note the space
-        });
-      }
+          experience.redemptionTiers.push({
+            id: tierRecord.id,
+            tierNumber: tierNumber, // Parsed from Tier field
+            pointsRequired: tierRecord.fields['Points Required'], // Note the space
+            poundValue: tierRecord.fields['Pound Value'], // Note the space
+          });
+        }
+      });
     });
 
     // Sort tiers within each experience
