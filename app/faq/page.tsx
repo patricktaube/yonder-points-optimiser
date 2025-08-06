@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 
 export default function FAQ() {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
@@ -59,13 +60,14 @@ export default function FAQ() {
           <div className="border-b border-orange-200/30 px-4 sm:px-6 lg:px-8">
             <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
             <div className="flex justify-between items-center max-w-6xl mx-auto">
-                <a 
+                <Link 
                 href="/"
                 className="text-sm font-medium px-4 py-2 rounded-full hover:bg-orange-100 transition-colors"
                 style={{ color: 'var(--foreground)' }}
                 >
                 ← Home
-                </a>
+                </Link>
+
                 
                 <h1 className="text-2xl sm:text-4xl font-bold text-center" style={{ color: 'var(--foreground)' }}>
                 Yonder Points Optimiser
@@ -84,7 +86,7 @@ export default function FAQ() {
               Frequently Asked Questions
             </h1>
           <p className="text-xl text-center" >
-            If you can't find the answer that you're looking for, feel free to send us a message.
+            If you can&apos;t find the answer that you&apos;re looking for, feel free to send us a message.
           </p>
         </div>
 

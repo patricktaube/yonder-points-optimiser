@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useMemo } from 'react';
 import { Experience, getCategories, calculateValueMetrics, getBestTier, CARD_TYPES, CardType, calculateBadgeThresholds } from '../lib/airtable';
 import ExperienceCard from './ExperienceCard';
+import Link from 'next/link';
 
 interface ExperiencesListProps {
   experiences: Experience[];
@@ -101,13 +102,17 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
           <div className="flex justify-between items-center"> {/* add max-w-6xl mx-auto to retain padding */} 
             {/* Left side - FAQ */}
              <div className="flex items-center">
-                <a 
+
+                <Link 
+
                 href="/faq" 
                 className="text-sm font-medium px-4 py-2 rounded-full hover:bg-orange-100 transition-colors"
                 style={{ color: 'var(--foreground)' }}
                 >
                 FAQ
-                </a>
+
+                </Link>
+
         </div>
             
             {/* Title */}
