@@ -67,6 +67,7 @@ export default function FAQ() {
                 >
                 ← Home
                 </Link>
+
                 
                 <h1 className="text-2xl sm:text-4xl font-bold text-center" style={{ color: 'var(--foreground)' }}>
                 Yonder Points Optimiser

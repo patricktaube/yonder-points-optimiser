@@ -102,13 +102,17 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
           <div className="flex justify-between items-center"> {/* add max-w-6xl mx-auto to retain padding */} 
             {/* Left side - FAQ */}
              <div className="flex items-center">
+
                 <Link 
+
                 href="/faq" 
                 className="text-sm font-medium px-4 py-2 rounded-full hover:bg-orange-100 transition-colors"
                 style={{ color: 'var(--foreground)' }}
                 >
                 FAQ
+
                 </Link>
+
         </div>
             
             {/* Title */}
