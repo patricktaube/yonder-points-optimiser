@@ -88,19 +88,39 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 
   const selectedCard = CARD_TYPES[selectedCardType];
 
+{/* ------------------------------ */}
+{/* Header */}
+{/* ------------------------------ */}
+
   return (
     <div style={{ backgroundColor: '#fef7f0' }} className="min-h-screen">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-50 border-b border-orange-200" style={{ backgroundColor: '#fef7f0' }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl sm:text-4xl font-bold" style={{ color: 'var(--foreground)' }}>
-                Yonder Points Optimiser
-              </h1>
-            </div>
+      <div className=" top-0 z-50 " style={{ backgroundColor: '#ffe5cc' }}> {/* add border-b border-orange-200 to separate header and body */}
+        {/* <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4"> */}
+       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex justify-between items-center"> {/* add max-w-6xl mx-auto to retain padding */} 
+            {/* Left side - FAQ */}
+             <div className="flex items-center">
+                <a 
+                href="/faq" 
+                className="text-sm font-medium px-4 py-2 rounded-full hover:bg-orange-100 transition-colors"
+                style={{ color: 'var(--foreground)' }}
+                >
+                FAQ
+                </a>
+        </div>
             
+            {/* Title */}
+            <div className="absolute left-1/2 transform -translate-x-1/2">
+                <h1 className="text-2xl sm:text-4xl font-bold text-center" style={{ color: 'var(--foreground)' }}>
+                 Yonder Points Optimiser
+                </h1>
+            </div>
+
+            {/* ------------------------------ */}
             {/* Pill-style Card Type Selector */}
+            {/* ------------------------------ */}
+
             <div className="relative">
               {/* Desktop version - Large pill container */}
               <div className="hidden sm:inline-flex items-center bg-white border-2 rounded-full px-3 py-2 shadow-lg" style={{ borderColor: 'var(--yonder-orange)' }}>
@@ -184,30 +204,34 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Tagline */}
-        {/* <div className='text-center mb-8'>
-            <p className="text-lg" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
-                Find the best-value redemptions for your points!
-            </p>
-        </div> */}
 
-         <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 mb-12" style={{ backgroundColor: '#FFE5CC' }}>
-          <div className="px-4 sm:px-6 lg:px-8 py-12 text-center">
-            <p className="text-2xl sm:text-2xl lg:text-4xl font-serif font-semibold" style={{ color: 'var(--foreground)' }}>
-              Find the best-value redemptions for your points!
+{/* ------------------------------ */}
+{/* Main Content */}
+{/* ------------------------------ */}
+
+      <div className="px-4 sm:px-6 lg:px-8"> 
+         <div className="hero-gradient-background relative -mx-4 sm:-mx-6 lg:-mx-8 mb-12" style={{ paddingBottom: '8rem'}}> {/* Extra padding to create overlap */}
+          <div className="px-4 sm:px-6 lg:px-8 py-12 text-center justify-center">
+            <h1 className="text-6xl sm:text-7xl lg:text-8xl font-serif font-semibold max-w-4xl mx-auto" style={{ color: 'var(--foreground)' }}>
+              Find the best-value redemptions for your points
+            </h1>
+            <p className="pt-6 py-6 text-2xl sm:text-2xl md-text-4xl mt-4 max-w-3xl mx-auto" style={{ color: 'var(--yonder-navy)', opacity: 0.8 }}>
+                Explore this month&apos;s best redemptions, compare value across experiences, and make sure you get the best return from your points.
             </p>
           </div>
         </div>
 
+        {/* ------------------------------ */}
         {/* Top 3 Overall Best Redemptions */}
-        <div className="mb-8">
-          <div className="text-center mb-6">
-            <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
-                This month&apos;s best redemption rates
-            </h2>
-           </div>
+        {/* ------------------------------ */}
+
+        <div className="max-w-6xl mx-auto mb-14 -mt-35">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 pb-8 sm:pb-12 shadow-lg border border-orange-100 relative z-10">
+            <div className="text-center mb-6">
+                <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
+                    This month&apos;s best redemption rates
+                </h2>
+            </div>
 
           <div className="grid gap-4 md:grid-cols-3 max-w-4xl mx-auto">
             {(() => {
@@ -314,10 +338,14 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
             })()}
           </div>
         </div>
+        </div>
 
-        {/* Responsive Category Grid - Same order as sections */}
-        <div className="mb-10">
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-4 justify-items-center">
+        {/* ------------------------------ */}
+        {/* Responsive Category Buttons Grid */}
+        {/* ------------------------------ */}
+
+        <div className="max-w-4xl mx-auto mb-14">
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
             <button
               onClick={() => setSelectedCategory(null)}
               className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-base font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full justify-center ${
@@ -351,7 +379,16 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
         </div>
 
         {/* Experiences by Category - In the same order as category filter */}
-        <div className="space-y-12">
+        <div className="max-w-6xl mx-auto space-y-12">
+            <div className="bg-white rounded-3xl p-6 sm:p-8 shadow-lg border border-orange-100">
+                  <div className="text-center mb-6">
+                    {/* <h2 className="text-xl font-bold" style={{ color: 'var(--foreground)' }}>
+                        All experiences by category
+                    </h2> */}
+                  </div>
+
+
+
           {categories.map((category) => {
             const categoryExperiences = experiencesByCategory[category] || [];
             if (categoryExperiences.length === 0) return null;
@@ -362,7 +399,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 
             return (
               <div key={category}>
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-8 mt-8">
                   <h2 className="text-2xl font-bold flex items-center gap-3" style={{ color: 'var(--foreground)' }}>
                     <span className="text-3xl">{categoryIcons[category] || categoryIcons.Default}</span>
                     <span>{category}</span>
@@ -378,7 +415,6 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                       style={{
                         backgroundColor: 'var(--light-peach)',
                         color: 'var(--yonder-navy)',
-                        border: `2px solid var(--yonder-orange)`
                       }}
                     >
                       {isExpanded ? '🔼 Show Less' : `🔽 Show All ${categoryExperiences.length}`}
@@ -407,7 +443,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                         color: 'white'
                       }}
                     >
-                      Show {categoryExperiences.length - 3} more {category.toLowerCase()} options
+                      Show {categoryExperiences.length - 3} more {category.toLowerCase()} experiences
                     </button>
                   </div>
                 )}
@@ -440,6 +476,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
           </p>
         </div>
       </div>
+    </div>
     </div>
   );
 }

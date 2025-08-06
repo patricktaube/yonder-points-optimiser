@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fdf2f8; /* Soft peach background */
+  --background: #ffe5cc; /* Soft peach background */
   --foreground: #1e293b; /* Dark slate for text */
   --yonder-navy: #1e293b; /* Dark blue accent */
   --yonder-orange: #E88267; /* Burnt orange */
@@ -27,8 +27,8 @@
   :root {
     --background: #2a240f;
     --foreground: #1e293b;
-    --card-background: #f3cca0;
-    --border-color: #f3cca0;
+    --card-background: #ffe5cc;
+    --border-color: #fef7f0;
   }
 }
 
@@ -36,4 +36,23 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-manrope), system-ui, -apple-system, sans-serif;
+}
+
+/* Add smooth transitions for interactive elements */
+.pill-transition {
+  transition: all 0.15s ease-in-out;
+}
+
+.pill-transition:hover {
+  transform: scale(1.05);
+}
+
+/* Container shadows */
+.container-shadow {
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+/* Hero background gradient */
+.hero-gradient-background {
+  background: linear-gradient(to bottom, #FFE5CC 0%, #FFE5CC 50%, rgba(255, 229, 204, 0.8) 80%, rgba(255, 229, 204, 0.3) 95%, transparent 100%); 
 }
