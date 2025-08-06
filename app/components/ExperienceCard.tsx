@@ -146,10 +146,10 @@ export default function ExperienceCard({
       <div 
         className="-mx-4 -mt-4 px-4 py-3 mb-3 rounded-t-xl"
         style={{ 
-          backgroundColor: '#f4b885', // Darker peach
+          backgroundColor: "var(--yonder-orange)", // Darker peach
         }}
       >
-        <h3 className="text-lg font-bold line-clamp-2" style={{ color: 'var(--yonder-navy)' }}>
+        <h3 className="text-lg font-bold line-clamp-2" style={{ color: '#ffffff' }}>
           {experience.name}
         </h3>
       </div>
