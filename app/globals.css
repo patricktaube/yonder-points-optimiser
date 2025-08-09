@@ -4,7 +4,7 @@
   --background: #ffe5cc; /* Soft peach background */
   --foreground: #1e293b; /* Dark slate for text */
   --yonder-navy: #1e293b; /* Dark blue accent */
-  --yonder-orange: #E88267; /* Burnt orange */
+  --yonder-orange: #f28f44; /* Burnt orange E88267  */
   --badge-sage: #13542c; /* Forest/sage green for badges */
   --badge-red: #a0310f; /* Deep red for error badges */
   --card-background: #ffffff;
@@ -52,7 +52,15 @@ body {
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
 }
 
-/* Hero background gradient */
-.hero-gradient-background {
-  background: linear-gradient(to bottom, #FFE5CC 0%, #FFE5CC 50%, rgba(255, 229, 204, 0.8) 80%, rgba(255, 229, 204, 0.3) 95%, transparent 100%); 
+
+/* Full-page gradient */
+.full-page-gradient {
+  background: linear-gradient(to bottom, 
+    #FFE5CC 0%,           
+    #FFE5CC 8%,           /* Solid until 8% down */
+    rgba(255, 229, 204, 0.4) 15%,  /* Quick fade */
+    rgba(255, 229, 204, 0.1) 25%,  /* Almost gone */
+    #fef7f0 30%           /* Background color by 30% */
+  );
+  min-height: 100vh;
 }

@@ -94,10 +94,9 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 {/* ------------------------------ */}
 
   return (
-    <div style={{ backgroundColor: '#fef7f0' }} className="min-h-screen">
+    <div className="full-page-gradient">
       {/* Sticky Header */}
-      <div className=" top-0 z-50 " style={{ backgroundColor: '#ffe5cc' }}> {/* add border-b border-orange-200 to separate header and body */}
-        {/* <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4"> */}
+      <div className=" top-0 z-50" > {/* add border-b border-orange-200 to separate header and body */}
        <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex justify-between items-center"> {/* add max-w-6xl mx-auto to retain padding */} 
             {/* Left side - FAQ */}
@@ -215,7 +214,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 {/* ------------------------------ */}
 
       <div className="px-4 sm:px-6 lg:px-8"> 
-         <div className="hero-gradient-background relative -mx-4 sm:-mx-6 lg:-mx-8 mb-12" style={{ paddingBottom: '8rem'}}> {/* Extra padding to create overlap */}
+         <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 mb-12" style={{ paddingBottom: '8rem'}}> {/* Extra padding to create overlap */}
           <div className="px-4 sm:px-6 lg:px-8 py-12 text-center justify-center">
             <h1 className="text-6xl sm:text-7xl lg:text-8xl font-serif font-semibold max-w-4xl mx-auto" style={{ color: 'var(--foreground)' }}>
               Find the best-value redemptions for your points
