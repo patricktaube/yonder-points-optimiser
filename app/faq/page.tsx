@@ -49,7 +49,7 @@ export default function FAQ() {
     },
     {
       question: "Can I support this in any way?",
-      answer: ["This tool is free to use and will always be. If you've shared it and want to help keep the lights on, feel free to buy me a coffee at the link below. It helps cover hosting costs. Thanks for your your support!",
+      answer: ["This tool is free to use and will always be. If you've shared it and want to help keep the lights on, feel free to buy me a coffee at the link below. It helps cover hosting costs. Thanks for your support!",
         <Link 
         key = "buy-coffee-link"
         href="https://www.buymeacoffee.com/yonderpointsoptimiser"
