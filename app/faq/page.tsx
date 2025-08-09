@@ -51,7 +51,11 @@ export default function FAQ() {
       question: "Can I support this in any way?",
       answer: ["This tool is free to use and will always be. If you've shared it and want to help keep the lights on, feel free to buy me a coffee at the link below. It helps cover hosting costs. Thanks for your your support!",
         <Link 
-        href="https://www.buymeacoffee.com/yonderpointsoptimiser"><img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=yonderpointsoptimiser&button_colour=f28f44&font_colour=000000&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00" /></Link>
+        key = "buy-coffee-link"
+        href="https://www.buymeacoffee.com/yonderpointsoptimiser"
+        >
+        <img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=yonderpointsoptimiser&button_colour=f28f44&font_colour=000000&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00" />
+        </Link>
       ]
     },
   ];
