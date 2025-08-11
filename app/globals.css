@@ -9,6 +9,7 @@
   --badge-red: #a0310f; /* Deep red for error badges */
   --card-background: #ffffff;
   --border-color: #e2e8f0;
+  --light-peach: #ffe5cc; /* Added missing light peach variable */
 }
 
 @theme inline {

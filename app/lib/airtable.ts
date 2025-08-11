@@ -68,20 +68,21 @@ export type BadgeType = 'best-value' | 'bad-deal' | null;
 // Constants for magic numbers used in the code; this is useful for performance optimisation.
 // The code won't have to recalculate these values every time.
 
-const VALUE_THRESHOLDS = {
-    AMAZING: 1.95,
-    GREAT: 1.8,
-    GOOD: 1.5,
-} as const;
-
 const BADGE_PERCENTILES = {
-    BEST_VALUE: 95, // 95th percentile for best value
-    BAD_DEAL: 20,   // 20th percentile for bad deal
+  BEST_VALUE: 95, // 95th percentile for best value
+  BAD_DEAL: 20,   // 20th percentile for bad deal
 } as const;
 
 const FALLBACK_THRESHOLDS = {
-    BEST_VALUE: 2.0,
-    BAD_DEAL:1.6
+  BEST_VALUE: 2.0,
+  BAD_DEAL: 1.6
+} as const;
+
+// Constants for floating point comparisons and positioning
+const FLOATING_POINT_TOLERANCE = 0.05;
+const BADGE_POSITION_OFFSET = {
+  TOP: -4,
+  RIGHT: -3
 } as const;
 
 // Validate environment variables
@@ -96,6 +97,8 @@ function validateEnvironment() {
 
 export async function getExperiences(): Promise<Experience[]> {
   try {
+    validateEnvironment(); // Add environment validation
+    
     const headers = {
       'Authorization': `Bearer ${process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN}`,
       'Content-Type': 'application/json',
@@ -113,10 +116,10 @@ export async function getExperiences(): Promise<Experience[]> {
     const experiencesResponse = await fetch(experiencesUrl.toString(), { headers });
 
     if (!experiencesResponse.ok) {
-      const errorText = await experiencesResponse.text();
       console.error('Experiences API error status:', experiencesResponse.status);
       // Don't log the full error text in production to avoid information leakage, particularly of API keys
       if (process.env.NODE_ENV === 'development') {
+        const errorText = await experiencesResponse.text();
         console.error('Experiences API error details:', errorText);
       }
       throw new Error(`Experiences API error: ${experiencesResponse.status}`);
@@ -132,9 +135,9 @@ export async function getExperiences(): Promise<Experience[]> {
     const tiersResponse = await fetch(tiersUrl.toString(), { headers });
 
     if (!tiersResponse.ok) {
-      const errorText = await tiersResponse.text();
       console.error('Tiers API error status:', tiersResponse.status);
       if (process.env.NODE_ENV === 'development') {
+        const errorText = await tiersResponse.text();
         console.error('Tiers API error details:', errorText);
       }
       throw new Error(`Tiers API error: ${tiersResponse.status}`);
@@ -245,7 +248,8 @@ export function getBestTier(
   return redemptionTiers.reduce((best, current) => {
     const bestMetrics = calculateValueMetrics(best, cardType);
     const currentMetrics = calculateValueMetrics(current, cardType);
-    return currentMetrics.effectiveReturn > bestMetrics.effectiveReturn ? current : best;
+    return currentMetrics.effectiveReturn > bestMetrics.effectiveReturn ?
+      current : best;
   });
 }
 
@@ -308,3 +312,9 @@ export function getExperienceBadge(
   
   return null;
 }
+
+// Export constants for use in components
+export const CONSTANTS = {
+  FLOATING_POINT_TOLERANCE,
+  BADGE_POSITION_OFFSET
+} as const;

@@ -1,8 +1,8 @@
 // app/components/ExperienceCard.tsx
 'use client';
 
-import { use, useMemo, useState, useRef } from 'react';   
-import { Experience, calculateValueMetrics, getBestTier, CardType, BadgeThresholds, getExperienceBadge } from '../lib/airtable';
+import { useMemo, useState, useRef } from 'react';
+import { Experience, calculateValueMetrics, getBestTier, CardType, BadgeThresholds, getExperienceBadge, CONSTANTS } from '../lib/airtable';
 
 interface ExperienceCardProps {
   experience: Experience;
@@ -29,18 +29,19 @@ export default function ExperienceCard({
     const isLinear = valueMetrics.length >= 2 &&
       valueMetrics.every((metrics, index) => {
         if (index === 0) return true;
-        return Math.abs(metrics.valuePerKPoints - valueMetrics[0].valuePerKPoints) < 0.05; // Allow small floating point errors
+        return Math.abs(metrics.valuePerKPoints - valueMetrics[0].valuePerKPoints) < CONSTANTS.FLOATING_POINT_TOLERANCE;
       });
 
-      if (!isLinear && valueMetrics.length >= 2) {
-  console.log('Non-linear detected for:', experience.name);
-  console.log('Redemption tiers:', experience.redemptionTiers);
-  console.log('Value metrics:', valueMetrics.map((m, i) => ({
-    tier: i + 1,
-    valuePerKPoints: m.valuePerKPoints,
-    diff: i === 0 ? 0 : Math.abs(m.valuePerKPoints - valueMetrics[0].valuePerKPoints)
-  })));
-}
+    // Debug logging only in development
+    if (process.env.NODE_ENV === 'development' && !isLinear && valueMetrics.length >= 2) {
+      console.log('Non-linear detected for:', experience.name);
+      console.log('Redemption tiers:', experience.redemptionTiers);
+      console.log('Value metrics:', valueMetrics.map((m, i) => ({
+        tier: i + 1,
+        valuePerKPoints: m.valuePerKPoints,
+        diff: i === 0 ? 0 : Math.abs(m.valuePerKPoints - valueMetrics[0].valuePerKPoints)
+      })));
+    }
 
     // Get best tier value for display
     const bestTier = getBestTier(experience.redemptionTiers, selectedCardType);
@@ -87,12 +88,28 @@ export default function ExperienceCard({
   const renderBadge = () => {
     if (!badgeType) return null;
 
+    const badgeStyle = {
+      position: 'absolute' as const,
+      top: CONSTANTS.BADGE_POSITION_OFFSET.TOP,
+      right: CONSTANTS.BADGE_POSITION_OFFSET.RIGHT,
+      color: 'white',
+      fontSize: '0.875rem',
+      fontWeight: 'bold',
+      padding: '0.5rem 1rem',
+      borderRadius: '9999px',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+      zIndex: 10
+    };
+
     switch (badgeType) {
       case 'best-value':
         return (
           <div 
-            className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg z-10"
-            style={{ backgroundColor: 'var(--badge-sage)' }}
+            className="absolute text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg z-10"
+            style={{ 
+              ...badgeStyle,
+              backgroundColor: 'var(--badge-sage)'
+            }}
           >
             Great Value
           </div>
@@ -100,8 +117,11 @@ export default function ExperienceCard({
       case 'bad-deal':
         return (
           <div 
-            className="absolute -top-4 -right-3 text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg z-10"
-            style={{ backgroundColor: 'var(--badge-red)' }}
+            className="absolute text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg z-10"
+            style={{ 
+              ...badgeStyle,
+              backgroundColor: 'var(--badge-red)'
+            }}
           >
             Bad Deal
           </div>
