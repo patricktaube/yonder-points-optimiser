@@ -1,12 +1,17 @@
-// app/page.tsx
 import { Suspense } from 'react';
 import ExperiencesList from './components/ExperiencesList';
-import { getExperiences } from './lib/airtable';
+import { getCachedExperiences } from './lib/airtable';
 
 export const revalidate = 300; // Revalidate every 5 minutes
 
-export default async function Home() {
-  const experiences = await getExperiences();
+export default async function Home({ 
+  searchParams 
+}: { 
+  searchParams: Promise<{ refresh?: string }> 
+}) {
+  const params = await searchParams;
+  const forceRefresh = params.refresh === 'true';
+  const experiences = await getCachedExperiences(forceRefresh);
 
   return (
     <div className="main-container">
