@@ -9,6 +9,7 @@ interface AirtableExperienceRecord {
   fields: {
     Name: string;
     Category: string;
+    City: string[];
     Description?: string;
     Active: boolean;
     Month: string;
@@ -41,6 +42,7 @@ export interface Experience {
   id: string;
   name: string;
   category: string;
+  city: string[];
   description?: string;
   active: boolean;
   month: string;
@@ -149,6 +151,7 @@ export async function getExperiences(): Promise<Experience[]> {
       id: record.id,
       name: record.fields.Name,
       category: record.fields.Category,
+      city: record.fields.City,
       description: record.fields.Description,
       active: record.fields.Active,
       month: record.fields.Month,

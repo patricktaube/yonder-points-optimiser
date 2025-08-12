@@ -1,8 +1,8 @@
 // app/components/ExperiencesList.tsx
 'use client';
 
-import { useState } from 'react';
-import { useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { UserSettings, loadSettings, saveSettings, getCities } from '../lib/settings';
 import { Experience, getCategories, calculateValueMetrics, getBestTier, CARD_TYPES, CardType, calculateBadgeThresholds } from '../lib/airtable';
 import ExperienceCard from './ExperienceCard';
 import Link from 'next/link';
@@ -28,15 +28,40 @@ const categoryIcons: Record<string, string> = {
 };
 
 export default function ExperiencesList({ experiences }: ExperiencesListProps) {
-  const [selectedCardType, setSelectedCardType] = useState<CardType>('credit_paid');
+  const [settings, setSettings] = useState<UserSettings>(() => loadSettings());
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
-  const categories = getCategories(experiences);
-  const filteredExperiences = selectedCategory
-    ? experiences.filter((exp) => exp.category === selectedCategory)
-    : experiences;
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [isCardDropdownOpen, setIsCardDropdownOpen] = useState(false);
+  const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
+
+  // Show welcome modal on first visit, hide after settings are saved
+  useEffect(() => {
+    if (!settings.hasCompletedSetup) {
+      setShowSettingsModal(true);
+    }
+  }, [settings.hasCompletedSetup]);
+
+  useEffect(() => {
+    if (settings.hasCompletedSetup) {
+      saveSettings(settings);
+    }
+  }, [settings]);
+
+  const cities = getCities(experiences);
+  const selectedCardType = settings.cardType; // For backward compatibility with existing code
+    
+  const filteredExperiences = experiences.filter((exp) => {
+    const matchesCategory = selectedCategory ? exp.category === selectedCategory : true;
+    const matchesCity = exp.city.includes(settings.city);
+    return matchesCategory && matchesCity;
+  });
+
+  const categories = getCategories(filteredExperiences);
+
+if (selectedCategory && !categories.includes(selectedCategory)) {
+  setSelectedCategory(null);
+}
 
   // Calculate badge thresholds for the selected card type
   const badgeThresholds = useMemo(() => 
@@ -89,10 +114,6 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 
   const selectedCard = CARD_TYPES[selectedCardType];
 
-{/* ------------------------------ */}
-{/* Header */}
-{/* ------------------------------ */}
-
   return (
     <div className="full-page-gradient">
       {/* Sticky Header */}
@@ -101,17 +122,13 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
           <div className="flex justify-between items-center"> {/* add max-w-6xl mx-auto to retain padding */} 
             {/* Left side - FAQ */}
              <div className="flex items-center">
-
                 <Link 
-
                 href="/faq" 
                 className="text-sm font-medium px-4 py-2 rounded-full hover:bg-orange-100 transition-colors"
                 style={{ color: 'var(--foreground)' }}
                 >
                 FAQ
-
                 </Link>
-
         </div>
             
             {/* Title */}
@@ -121,98 +138,192 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                 </h1>
             </div>
 
-            {/* ------------------------------ */}
-            {/* Pill-style Card Type Selector */}
-            {/* ------------------------------ */}
-
+            {/* Settings Button */}
             <div className="relative">
-              {/* Desktop version - Large pill container */}
-              <div className="hidden sm:inline-flex items-center bg-white border-2 rounded-full px-3 py-2 shadow-lg" style={{ borderColor: 'var(--yonder-orange)' }}>
-                <span className="text-sm font-medium px-2" style={{ color: 'var(--foreground)' }}>
-                  My Card:
+              {/* Desktop version */}
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="hidden sm:inline-flex items-center gap-2 bg-white border-2 rounded-full px-4 py-2 shadow-lg hover:shadow-xl transition-all duration-200"
+                style={{ borderColor: 'var(--yonder-orange)' }}
+              >
+                <span className="text-xl">⚙️</span>
+                <span className="text-sm font-medium" style={{ color: 'var(--foreground)' }}>
+                  Settings
                 </span>
-                
-                {/* Dropdown pill - smaller pill inside */}
-                <div className="relative">
-                  <button
-                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                    className="flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-full transition-all duration-200 hover:shadow-md min-w-32"
-                    style={{ backgroundColor: 'var(--yonder-orange)' }}
-                  >
-                    <span className="text-sm">{selectedCard?.name}</span>
-                    <svg 
-                      className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
-                      fill="none" 
-                      stroke="currentColor" 
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              </button>
 
-              {/* Mobile version - Compact pill with card icon */}
-              <div className="sm:hidden">
-                <button
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                  className="flex items-center gap-2 text-white font-semibold px-3 py-2 rounded-full transition-all duration-200 hover:shadow-md shadow-lg"
-                  style={{ backgroundColor: 'var(--yonder-orange)' }}
-                >
-                  <span className="text-base">💳</span>
-                  <svg 
-                    className={`w-4 h-4 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`}
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-              </div>
+              {/* Mobile version */}
+              <button
+                onClick={() => setShowSettingsModal(true)}
+                className="sm:hidden p-2 rounded-full hover:bg-orange-100 transition-colors"
+              >
+                <span className="text-2xl">⚙️</span>
+              </button>
 
-              {/* Dropdown menu - same for both desktop and mobile */}
-              {isDropdownOpen && (
-                <div className="absolute top-full right-0 mt-2 w-56 bg-white border-2 rounded-xl shadow-lg z-50" style={{ borderColor: 'var(--yonder-orange)' }}>
-                  {Object.entries(CARD_TYPES).map(([key, cardType]) => (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        setSelectedCardType(key as CardType);
-                        setIsDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-3 transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl ${
-                        selectedCardType === key ? 'text-white' : 'hover:bg-orange-50'
-                      }`}
-                      style={{ 
-                        backgroundColor: selectedCardType === key ? 'var(--yonder-orange)' : 'transparent',
-                        color: selectedCardType === key ? 'white' : 'var(--foreground)'
-                      }}
-                    >
-                      <div className="font-semibold">{cardType.name}</div>
-                      <div className="text-sm opacity-75">{cardType.pointsPerPound} pts/£</div>
-                    </button>
-                  ))}
-                </div>
-              )}
+              {/* Settings Dropdown Modal */}
+                {showSettingsModal && (
+                  <div className="absolute top-full right-0 mt-2 w-80 border-2 rounded-3xl shadow-lg z-50 background-blur-sm" 
+                       style={{ borderColor: 'var(--yonder-orange)',
+                       backgroundColor: 'rgba(255, 255, 255, 0.6)'
+                     }}>
+                    <div className="p-6">
+                      {/* Welcome message for first-time users */}
+                      {!settings.hasCompletedSetup && (
+                        <div className="mb-4 text-center">
+                          <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
+                            Welcome! Let's get started 🚀
+                          </h2>
+                          <p className="text-sm mb-4" style={{ color: 'var(--yonder-navy)', opacity: 0.8 }}>
+                            Set your preferences to see the best redemptions for you
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* City Selector - Pill Style */}
+                      <div className="mb-4">
+                      <div className="relative">
+                          <div className="inline-flex items-center bg-white border-2 rounded-full px-3 py-2 w-full" style={{ borderColor: 'var(--yonder-orange)' }}>
+                            <span className="text-sm font-medium px-2" style={{ color: 'var(--foreground)' }}>
+                              City:
+                            </span>
+                            
+                            {/* City pill inside */}
+                            <div className="relative flex-1">
+                              <button
+                                onClick={() => setIsCityDropdownOpen(!isCityDropdownOpen)}
+                                className="flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-full transition-all duration-200 hover:shadow-md w-full justify-between"
+                                style={{ backgroundColor: 'var(--yonder-orange)' }}
+                              >
+                                <span className="text-sm">{settings.city}</span>
+                                <svg 
+                                  className={`w-4 h-4 transition-transform duration-200 ${isCityDropdownOpen ? 'rotate-180' : ''}`}
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                              
+                              {/* City Dropdown */}
+                              {isCityDropdownOpen && (
+                                <div className="absolute top-full right-0 mt-2 w-56 bg-white border-2 rounded-xl shadow-lg z-50" style={{ borderColor: 'var(--yonder-orange)' }}>
+                                  {cities.map((city) => (
+                                    <button
+                                      key={city}
+                                      onClick={() => {
+                                        setSettings(prev => ({ ...prev, city }));
+                                        setIsCityDropdownOpen(false);
+                                      }}
+                                      className={`w-full text-left px-4 py-3 transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl ${
+                                        settings.city === city ? 'text-white' : 'hover:bg-orange-50'
+                                      }`}
+                                      style={{ 
+                                        backgroundColor: settings.city === city ? 'var(--yonder-orange)' : 'transparent',
+                                        color: settings.city === city ? 'white' : 'var(--foreground)'
+                                      }}
+                                    >
+                                      <div className="font-semibold">{city}</div>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
-              {/* Click outside handler */}
-              {isDropdownOpen && (
-                <div 
-                  className="fixed inset-0 z-40" 
-                  onClick={() => setIsDropdownOpen(false)}
-                />
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+                      {/* Card Type Selector - Pill Style */}
+                      <div className="mb-6">
+                       <div className="relative">
+                          <div className="inline-flex items-center bg-white border-2 rounded-full px-3 py-2 w-full" style={{ borderColor: 'var(--yonder-orange)' }}>
+                            <span className="text-sm font-medium px-2" style={{ color: 'var(--foreground)' }}>
+                              My Card:
+                            </span>
+                            
+                            {/* Card pill inside */}
+                            <div className="relative flex-1">
+                              <button
+                                onClick={() => setIsCardDropdownOpen(!isCardDropdownOpen)}
+                                className="flex items-center gap-2 text-white font-semibold px-4 py-2 rounded-full transition-all duration-200 hover:shadow-md w-full justify-between"
+                                style={{ backgroundColor: 'var(--yonder-orange)' }}
+                              >
+                                <span className="text-sm">{selectedCard?.name}</span>
+                                <svg 
+                                  className={`w-4 h-4 transition-transform duration-200 ${isCardDropdownOpen ? 'rotate-180' : ''}`}
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+                              
+                              {/* Card Dropdown */}
+                              {isCardDropdownOpen && (
+                                <div className="absolute top-full right-0 mt-2 w-56 bg-white border-2 rounded-xl shadow-lg z-50" style={{ borderColor: 'var(--yonder-orange)' }}>
+                                  {Object.entries(CARD_TYPES).map(([key, cardType]) => (
+                                    <button
+                                      key={key}
+                                      onClick={() => {
+                                        setSettings(prev => ({ ...prev, cardType: key as CardType }));
+                                        setIsCardDropdownOpen(false);
+                                      }}
+                                      className={`w-full text-left px-4 py-3 transition-colors duration-150 first:rounded-t-xl last:rounded-b-xl ${
+                                        settings.cardType === key ? 'text-white' : 'hover:bg-orange-50'
+                                      }`}
+                                      style={{ 
+                                        backgroundColor: settings.cardType === key ? 'var(--yonder-orange)' : 'transparent',
+                                        color: settings.cardType === key ? 'white' : 'var(--foreground)'
+                                      }}
+                                    >
+                                      <div className="font-semibold">{cardType.name}</div>
+                                      <div className="text-sm opacity-75">{cardType.pointsPerPound} pts/£</div>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
+                      {/* Save Button - Different text for first-time vs returning users */}
+                      <button
+                        onClick={() => {
+                          const updatedSettings = { ...settings, hasCompletedSetup: true };
+                          setSettings(updatedSettings);
+                          saveSettings(updatedSettings);
+                          setShowSettingsModal(false);
+                          setIsCardDropdownOpen(false);
+                          setIsCityDropdownOpen(false);
+                        }}
+                        className="w-full py-3 rounded-full font-semibold text-white transition-all duration-200 hover:shadow-lg"
+                        style={{ backgroundColor: 'var(--yonder-orange)' }}
+                      >
+                        {!settings.hasCompletedSetup ? "Let's get started! 🚀" : "Save Settings"}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-{/* ------------------------------ */}
-{/* Main Content */}
-{/* ------------------------------ */}
+                {/* Click outside handler */}
+                {showSettingsModal && (
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => {
+                      setShowSettingsModal(false);
+                      setIsCardDropdownOpen(false);
+                      setIsCityDropdownOpen(false);
+                    }}
+                  />
+                )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
 
+      {/* Main Content */}
       <div className="px-4 sm:px-6 lg:px-8"> 
          <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 mb-12" style={{ paddingBottom: '8rem'}}> {/* Extra padding to create overlap */}
           <div className="px-4 sm:px-6 lg:px-8 py-12 text-center justify-center">
@@ -225,11 +336,8 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
           </div>
         </div>
 
-        {/* ------------------------------ */}
         {/* Top 3 Overall Best Redemptions */}
-        {/* ------------------------------ */}
-
-        <div className="max-w-6xl mx-auto mb-14 -mt-35">
+        <div className="max-w-6xl mx-auto mb-14 -mt-50">
           <div className="bg-white rounded-3xl p-6 sm:p-8 pb-8 sm:pb-12 shadow-lg border border-orange-100 relative z-10">
             <div className="text-center mb-6">
                 <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
@@ -331,7 +439,6 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                           >
                             {(metrics.effectiveReturn - averageReturn).toFixed(1)}% 
                             {metrics.effectiveReturn > averageReturn ? ' more than average' : ''}
-
                             </span>
                         </div>
                       </div>
@@ -344,10 +451,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
         </div>
         </div>
 
-        {/* ------------------------------ */}
         {/* Responsive Category Buttons Grid */}
-        {/* ------------------------------ */}
-
         <div className="max-w-4xl mx-auto mb-14">
           <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-4 place-items-center">
             <button
@@ -390,8 +494,6 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                         All experiences by category
                     </h2> */}
                   </div>
-
-
 
           {categories.map((category) => {
             const categoryExperiences = experiencesByCategory[category] || [];
@@ -480,7 +582,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
           </p>
         </div>
       </div>
-    </div>
+    </div>    
     </div>
   );
 }
