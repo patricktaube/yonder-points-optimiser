@@ -3,6 +3,9 @@ import { Geist, Geist_Mono, Manrope, Lobster_Two } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";   
 
+
+
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -26,8 +29,37 @@ const lobsterTwo = Lobster_Two({
 });
 
 export const metadata: Metadata = {
-  title: "Yonder Points Optimiser",
-  description: "Find the best value redemptions for your Yonder points",
+  title: "Yonder Points Optimiser - Find Best Redemption Rates",
+  description: "Free tool to find the best value redemptions for your Yonder credit card points. Compare rates across all tiers and categories to maximize your points value.",
+  keywords: "Yonder card, Yonder points, credit card redemption, points optimization, Yonder calculator, Yonder experiences",
+  authors: [{ name: "Yonder Points Community" }],
+  openGraph: {
+    title: "Yonder Points Optimiser",
+    description: "Find the best value redemptions for your Yonder points",
+    url: "https://yonderpoints.com",
+    siteName: "Yonder Points Optimiser",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Yonder Points Optimiser",
+    description: "Find the best value redemptions for your Yonder points",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  other: {
+    'application/ld+json': JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Yonder Points Optimiser",
+      "description": "Free tool to optimize Yonder credit card point redemptions",
+      "url": "https://yonderpoints.com",
+      "applicationCategory": "FinanceApplication",
+      "operatingSystem": "Web Browser"
+    })
+  }
 };
 
 export default function RootLayout({
@@ -47,3 +79,4 @@ export default function RootLayout({
     </html>
   );
 }
+

@@ -5,12 +5,13 @@ A lightweight tool for finding the best value redemptions with your Yonder credi
 ## 🚀 Features
 
 - **Multi-tier Support**: Compare rates across Free, Paid, and Premium Yonder card tiers
-- **Best Value Highlighting**: Automatically identifies and badges the best redemption opportunities
+- **City-based Filtering**: Browse experiences available in your city (London, Manchester, Birmingham, Leeds)
+- **Personalized Settings**: Save your card type and city preferences with automatic persistence
+- **Best Value Highlighting**: Automatically identifies and badges the best redemption opportunities based on dynamic thresholds.
 - **Category Filtering**: Browse experiences by category (Dining, Travel, Shopping, etc.)
-- **Top 3 Rankings**: Showcases the best overall redemption rates
+- **Top 3 Rankings**: Showcases the best overall redemption rates for your location
 - **Mobile Optimized**: Responsive design with mobile-specific layouts
 - **Real-time Data**: Pulls live data from Airtable for up-to-date redemption rates
-- **Smart Badges**: "Great Value" and "Bad Deal" indicators based on dynamic thresholds
 
 ## 🛠️ Tech Stack
 
@@ -18,13 +19,26 @@ A lightweight tool for finding the best value redemptions with your Yonder credi
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS v4
 - **Database**: Airtable
+- **Storage**: LocalStorage for user preferences
 - **Deployment**: Vercel
 - **UI Components**: Custom React components with interactive features
 
-## 📱 Design Features
+## 🎯 User Experience
 
-- **Responsive Grid**: 2-column layout on mobile, 3-column on desktop
-- **Interactive Cards**: Hover effects with cursor-following glow (desktop only)
-- **Pill-style Selectors**: Clean card type selector with mobile-optimized version
-- **Category Icons**: Visual category identification with emoji icons
-- **Dynamic Badges**: Context-aware value indicators
+- **Smart Defaults**: London location and Credit Paid card pre-selected for optimal experience
+- **Guided Setup**: New users get a welcome flow to set their preferences
+- **Instant Filtering**: Real-time filtering by category and city with smooth transitions
+
+## 🏗️ Architecture
+
+- **Data Structure**: City-specific experience records in Airtable for flexible pricing
+- **State Management**: React hooks with localStorage persistence
+- **Dynamic Content**: City list automatically extracted from available data
+- **Performance Optimized**: Efficient filtering and memoized calculations
+
+## 📊 Data Model
+
+- **Experiences**: Each experience record includes city, category, and redemption tiers
+- **Multi-city Support**: Same experience can have different rates across cities
+- **Monthly Updates**: Content automatically filtered by current month
+- **Flexible Tiers**: Support for multiple redemption levels per experience
