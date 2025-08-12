@@ -214,50 +214,61 @@ export async function getCachedExperiences(forceRefresh = false): Promise<Experi
     return await getExperiences();
   }
 
-  try {
-    const fs = await import('fs');
-    const { join } = await import('path');
-    
-    // Use project-local cache for development, /tmp for Vercel
-    const cacheDir = process.env.VERCEL ? '/tmp' : join(process.cwd(), '.cache');
-    const cacheFile = join(cacheDir, `experiences-${currentYear}-${currentMonth.toString().padStart(2, '0')}.json`);
-    
-    // Ensure cache directory exists (for local development)
-    if (!process.env.VERCEL && !fs.existsSync(cacheDir)) {
-      fs.mkdirSync(cacheDir, { recursive: true });
-    }
-    
-    if (!forceRefresh && fs.existsSync(cacheFile)) {
-      const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
-      console.log(`Returning cached experiences from ${cacheFile}`);
-      return cached;
-    }
-    
-    if (forceRefresh) {
-      console.log('Force refresh requested, fetching fresh data');
-    } else {
-      console.log('No valid cache found, fetching fresh data');
-    }
-    
-    const experiences = await getExperiences();
-    fs.writeFileSync(cacheFile, JSON.stringify(experiences));
-    console.log(`Cached ${experiences.length} experiences to ${cacheFile}`);
-    return experiences;
-    
-  } catch (fsError) {
-    // Fallback to memory cache
-    console.log('Filesystem not available, using memory cache');
-    
-    if (!forceRefresh && memoryCache && memoryCache.month === currentMonth) {
-      console.log('Returning memory cached experiences');
-      return memoryCache.data;
-    }
-    
-    const experiences = await getExperiences();
-    memoryCache = { data: experiences, timestamp: Date.now(), month: currentMonth };
-    console.log('Cached to memory');
-    return experiences;
+  // Always try memory cache first as a safety net
+  if (!forceRefresh && memoryCache && memoryCache.month === currentMonth) {
+    console.log('Returning memory cached experiences');
+    return memoryCache.data;
   }
+
+  try {
+    // Only try filesystem in Node.js environment
+    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+      const fs = await import('fs');
+      const { join } = await import('path');
+      
+      // Use project-local cache for development, /tmp for Vercel
+      const cacheDir = process.env.VERCEL ? '/tmp' : join(process.cwd(), '.cache');
+      const cacheFile = join(cacheDir, `experiences-${currentYear}-${currentMonth.toString().padStart(2, '0')}.json`);
+      
+      // Ensure cache directory exists (for local development)
+      if (!process.env.VERCEL && !fs.existsSync(cacheDir)) {
+        fs.mkdirSync(cacheDir, { recursive: true });
+      }
+      
+      if (!forceRefresh && fs.existsSync(cacheFile)) {
+        const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+        console.log(`Returning filesystem cached experiences from ${cacheFile}`);
+        // Also update memory cache
+        memoryCache = { data: cached, timestamp: Date.now(), month: currentMonth };
+        return cached;
+      }
+      
+      if (forceRefresh) {
+        console.log('Force refresh requested, fetching fresh data');
+      } else {
+        console.log('No valid cache found, fetching fresh data');
+      }
+      
+      const experiences = await getExperiences();
+      
+      // Cache to filesystem
+      fs.writeFileSync(cacheFile, JSON.stringify(experiences));
+      console.log(`Cached ${experiences.length} experiences to ${cacheFile}`);
+      
+      // Also cache to memory
+      memoryCache = { data: experiences, timestamp: Date.now(), month: currentMonth };
+      return experiences;
+    }
+  } catch (fsError) {
+    console.log('Filesystem caching failed, using memory cache');
+    console.error('FS Error:', fsError);
+  }
+  
+  // Fallback: fetch fresh and cache in memory only
+  console.log('Using memory-only caching');
+  const experiences = await getExperiences();
+  memoryCache = { data: experiences, timestamp: Date.now(), month: currentMonth };
+  return experiences;
 }
 
 // Helper function to get unique categories in preferred order
