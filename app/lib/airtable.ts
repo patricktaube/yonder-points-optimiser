@@ -4,6 +4,9 @@
 // -------------------------------------------
 // These interfaces match the structures of the Airtable records
 
+let memoryCache: { data: Experience[], timestamp: number, month: number } | null = null;
+// This will be used to cache the experiences data in memory for performance
+
 interface AirtableExperienceRecord {
   id: string;
   fields: {
@@ -194,6 +197,66 @@ export async function getExperiences(): Promise<Experience[]> {
   } catch (error) {
     console.error('Error fetching from Airtable:', error);
     return [];
+  }
+}
+
+// Function to get cached experiences, with optional force refresh
+// This will cache the experiences to a file for performance
+// and to avoid hitting the Airtable API too frequently.
+
+export async function getCachedExperiences(forceRefresh = false): Promise<Experience[]> {
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  const isServer = typeof window === 'undefined';
+  
+  if (!isServer) {
+    console.log('Client-side call, fetching directly');
+    return await getExperiences();
+  }
+
+  try {
+    const fs = await import('fs');
+    const { join } = await import('path');
+    
+    // Use project-local cache for development, /tmp for Vercel
+    const cacheDir = process.env.VERCEL ? '/tmp' : join(process.cwd(), '.cache');
+    const cacheFile = join(cacheDir, `experiences-${currentYear}-${currentMonth.toString().padStart(2, '0')}.json`);
+    
+    // Ensure cache directory exists (for local development)
+    if (!process.env.VERCEL && !fs.existsSync(cacheDir)) {
+      fs.mkdirSync(cacheDir, { recursive: true });
+    }
+    
+    if (!forceRefresh && fs.existsSync(cacheFile)) {
+      const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+      console.log(`Returning cached experiences from ${cacheFile}`);
+      return cached;
+    }
+    
+    if (forceRefresh) {
+      console.log('Force refresh requested, fetching fresh data');
+    } else {
+      console.log('No valid cache found, fetching fresh data');
+    }
+    
+    const experiences = await getExperiences();
+    fs.writeFileSync(cacheFile, JSON.stringify(experiences));
+    console.log(`Cached ${experiences.length} experiences to ${cacheFile}`);
+    return experiences;
+    
+  } catch (fsError) {
+    // Fallback to memory cache
+    console.log('Filesystem not available, using memory cache');
+    
+    if (!forceRefresh && memoryCache && memoryCache.month === currentMonth) {
+      console.log('Returning memory cached experiences');
+      return memoryCache.data;
+    }
+    
+    const experiences = await getExperiences();
+    memoryCache = { data: experiences, timestamp: Date.now(), month: currentMonth };
+    console.log('Cached to memory');
+    return experiences;
   }
 }
 
