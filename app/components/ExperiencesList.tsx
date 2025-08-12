@@ -171,10 +171,10 @@ if (selectedCategory && !categories.includes(selectedCategory)) {
                       {!settings.hasCompletedSetup && (
                         <div className="mb-4 text-center">
                           <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
-                            Welcome! Let's get started 🚀
+                            Welcome! Let&apos;s get started 🚀
                           </h2>
                           <p className="text-sm mb-4" style={{ color: 'var(--yonder-navy)', opacity: 0.8 }}>
-                            Set your preferences to see the best redemptions for you
+                            Select your city and card type to see the best redemptions.
                           </p>
                         </div>
                       )}
