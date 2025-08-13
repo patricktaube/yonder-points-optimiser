@@ -50,24 +50,30 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 
   const cities = getCities(experiences);
   const selectedCardType = settings.cardType; // For backward compatibility with existing code
-    
-  const filteredExperiences = experiences.filter((exp) => {
-    const matchesCategory = selectedCategory ? exp.category === selectedCategory : true;
-    const matchesCity = exp.city.includes(settings.city);
-    return matchesCategory && matchesCity;
-  });
 
-  const categories = getCategories(filteredExperiences);
 
-if (selectedCategory && !categories.includes(selectedCategory)) {
-  setSelectedCategory(null);
-}
-
-  // Calculate badge thresholds for the selected card type
-  const badgeThresholds = useMemo(() => 
-    calculateBadgeThresholds(experiences, selectedCardType), 
-    [experiences, selectedCardType]
+  // Filter by city only for badge calculations
+  const cityFilteredExperiences = experiences.filter((exp) => 
+    exp.city.includes(settings.city)
   );
+
+  // Calculate badge thresholds using city-specific experiences
+  const badgeThresholds = useMemo(() => 
+    calculateBadgeThresholds(cityFilteredExperiences, selectedCardType), 
+    [cityFilteredExperiences, selectedCardType]
+  );
+
+  // Then filter by category for display
+  const filteredExperiences = cityFilteredExperiences.filter((exp) => 
+    selectedCategory ? exp.category === selectedCategory : true
+  );
+
+  const categories = getCategories(cityFilteredExperiences);
+
+  if (selectedCategory && !categories.includes(selectedCategory)) {
+  setSelectedCategory(null);
+  }
+
   
   // Group experiences by category and maintain the same order as categories
   const experiencesByCategory: Record<string, Experience[]> = {};
@@ -164,14 +170,14 @@ if (selectedCategory && !categories.includes(selectedCategory)) {
                 {showSettingsModal && (
                   <div className="absolute top-full right-0 mt-2 w-80 border-2 rounded-3xl shadow-lg z-50 background-blur-sm" 
                        style={{ borderColor: 'var(--yonder-orange)',
-                       backgroundColor: 'rgba(255, 255, 255, 0.6)'
+                       backgroundColor: 'rgba(255, 255, 255, 0.97)'
                      }}>
                     <div className="p-6">
                       {/* Welcome message for first-time users */}
                       {!settings.hasCompletedSetup && (
                         <div className="mb-4 text-center">
                           <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
-                            Welcome! Let&apos;s get started 🚀
+                            Welcome! Let&apos;s get started.
                           </h2>
                           <p className="text-sm mb-4" style={{ color: 'var(--yonder-navy)', opacity: 0.8 }}>
                             Select your city and card type to see the best redemptions.
@@ -182,7 +188,7 @@ if (selectedCategory && !categories.includes(selectedCategory)) {
                       {/* City Selector - Pill Style */}
                       <div className="mb-4">
                       <div className="relative">
-                          <div className="inline-flex items-center bg-white border-2 rounded-full px-3 py-2 w-full" style={{ borderColor: 'var(--yonder-orange)' }}>
+                          <div className="inline-flex items-center rounded-full px-3 py-2 w-full" style={{ borderColor: 'var(--yonder-orange)' }}>
                             <span className="text-sm font-medium px-2" style={{ color: 'var(--foreground)' }}>
                               City:
                             </span>
@@ -236,7 +242,7 @@ if (selectedCategory && !categories.includes(selectedCategory)) {
                       {/* Card Type Selector - Pill Style */}
                       <div className="mb-6">
                        <div className="relative">
-                          <div className="inline-flex items-center bg-white border-2 rounded-full px-3 py-2 w-full" style={{ borderColor: 'var(--yonder-orange)' }}>
+                          <div className="inline-flex items-center rounded-full px-3 py-2 w-full" style={{ borderColor: 'var(--yonder-orange)' }}>
                             <span className="text-sm font-medium px-2" style={{ color: 'var(--foreground)' }}>
                               My Card:
                             </span>
@@ -500,16 +506,16 @@ if (selectedCategory && !categories.includes(selectedCategory)) {
             if (categoryExperiences.length === 0) return null;
             
             const isExpanded = expandedCategories.has(category);
-            const displayExperiences = isExpanded ? categoryExperiences : categoryExperiences.slice(0, 3);
+            const displayExperiences = isExpanded ? categoryExperiences : categoryExperiences.slice(0, 4);
             const hasMore = categoryExperiences.length > 3;
 
             return (
               <div key={category}>
                 <div className="flex items-center justify-between mb-8 mt-8">
-                  <h2 className="text-2xl font-bold flex items-center gap-3" style={{ color: 'var(--foreground)' }}>
-                    <span className="text-3xl">{categoryIcons[category] || categoryIcons.Default}</span>
+                  <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3 flex-1" style={{ color: 'var(--foreground)' }}>
+                    <span className="text-2xl sm:text-3xl">{categoryIcons[category] || categoryIcons.Default}</span>
                     <span>{category}</span>
-                    <span className="text-lg font-normal px-3 py-1 rounded-full text-white" style={{ backgroundColor: 'var(--yonder-orange)' }}>
+                    <span className="text-sm sm:text-lg font-normal px-2 sm:px-3 py-1 rounded-full text-white flex-shrink-0" style={{ backgroundColor: 'var(--yonder-orange)' }}>
                       {categoryExperiences.length}
                     </span>
                   </h2>
@@ -517,13 +523,18 @@ if (selectedCategory && !categories.includes(selectedCategory)) {
                   {hasMore && (
                     <button
                       onClick={() => toggleCategoryExpansion(category)}
-                      className="flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105"
+                      className="flex items-center gap-1 px-3 py-2 rounded-xl font-medium transition-all duration-200 hover:scale-105 text-sm whitespace-nowrap ml-2"
                       style={{
                         backgroundColor: 'var(--light-peach)',
                         color: 'var(--yonder-navy)',
                       }}
                     >
+                      <span className="hidden sm:inline">
                       {isExpanded ? '🔼 Show Less' : `🔽 Show All ${categoryExperiences.length}`}
+                      </span>
+                      <span className="sm:hidden">
+                        {isExpanded ? '🔼' : '🔽'}
+                      </span>
                     </button>
                   )}
                 </div>
@@ -549,7 +560,7 @@ if (selectedCategory && !categories.includes(selectedCategory)) {
                         color: 'white'
                       }}
                     >
-                      Show {categoryExperiences.length - 3} more {category.toLowerCase()} experiences
+                      Show {categoryExperiences.length - 4} more {category.toLowerCase()} experiences
                     </button>
                   </div>
                 )}
@@ -571,7 +582,7 @@ if (selectedCategory && !categories.includes(selectedCategory)) {
         )}
         
         {/* Legal Disclaimer */}
-        <div className="mt-16 pt-8 border-t border-gray-300">
+        <div className="mt-16 pt-8 pb-4 border-t border-gray-300">
           <p className="text-center text-sm text-gray-600 max-w-4xl mx-auto leading-relaxed">
             Made with ❤️ for the Yonder community.
             <br />

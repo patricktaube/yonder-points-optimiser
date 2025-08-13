@@ -86,50 +86,53 @@ export default function ExperienceCard({
   
   // Render badge
   const renderBadge = () => {
-    if (!badgeType) return null;
+  if (!badgeType) return null;
 
-    const badgeStyle = {
-      position: 'absolute' as const,
-      top: CONSTANTS.BADGE_POSITION_OFFSET.TOP,
-      right: CONSTANTS.BADGE_POSITION_OFFSET.RIGHT,
-      color: 'white',
-      fontSize: '0.875rem',
-      fontWeight: 'bold',
-      padding: '0.5rem 1rem',
-      borderRadius: '9999px',
-      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-      zIndex: 10
-    };
-
-    switch (badgeType) {
-      case 'best-value':
-        return (
-          <div 
-            className="absolute text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg z-10"
-            style={{ 
-              ...badgeStyle,
-              backgroundColor: 'var(--badge-sage)'
-            }}
-          >
-            Great Value
-          </div>
-        );
-      case 'bad-deal':
-        return (
-          <div 
-            className="absolute text-white text-sm font-bold px-4 py-2 rounded-full shadow-lg z-10"
-            style={{ 
-              ...badgeStyle,
-              backgroundColor: 'var(--badge-red)'
-            }}
-          >
-            Bad Deal
-          </div>
-        );
-      default:
-        return null;
-    }
+  const badgeStyle = {
+    position: 'absolute' as const,
+    top: CONSTANTS.BADGE_POSITION_OFFSET.TOP,
+    right: CONSTANTS.BADGE_POSITION_OFFSET.RIGHT,
+    color: 'white',
+    fontSize: '0.875rem',
+    fontWeight: 'bold',
+    padding: '0.5rem 1rem',
+    borderRadius: '9999px',
+    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
+    zIndex: 10
   };
+
+  switch (badgeType) {
+    case 'best-value':
+      return (
+        <div 
+          className="absolute text-white text-sm font-bold rounded-full shadow-lg z-10 flex items-center justify-center"
+          style={{ 
+            ...badgeStyle,
+            backgroundColor: 'var(--badge-sage)',
+          }}
+        >
+          {/* Use Tailwind responsive classes instead of window.innerWidth */}
+          <span className="sm:hidden">👍</span>
+          <span className="hidden sm:inline">Great Value</span>
+        </div>
+      );
+    case 'bad-deal':
+      return (
+        <div 
+          className="absolute text-white text-sm font-bold rounded-full shadow-lg z-10 flex items-center justify-center"
+          style={{ 
+            ...badgeStyle,
+            backgroundColor: 'var(--badge-red)',
+          }}
+        >
+          <span className="sm:hidden">👎</span>
+          <span className="hidden sm:inline">Bad Deal</span>
+        </div>
+      );
+    default:
+      return null;
+  }
+};
 
   return (
     <div 
