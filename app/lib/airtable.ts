@@ -86,8 +86,8 @@ const FALLBACK_THRESHOLDS = {
 // Constants for floating point comparisons and positioning
 const FLOATING_POINT_TOLERANCE = 0.05;
 const BADGE_POSITION_OFFSET = {
-  TOP: -4,
-  RIGHT: -3
+  TOP: -10,
+  RIGHT: -10
 } as const;
 
 // Validate environment variables
