@@ -32,16 +32,22 @@ export default function ExperienceCard({
         return Math.abs(metrics.valuePerKPoints - valueMetrics[0].valuePerKPoints) < CONSTANTS.FLOATING_POINT_TOLERANCE;
       });
 
-    // Debug logging only in development
-    if (process.env.NODE_ENV === 'development' && !isLinear && valueMetrics.length >= 2) {
-      console.log('Non-linear detected for:', experience.name);
-      console.log('Redemption tiers:', experience.redemptionTiers);
-      console.log('Value metrics:', valueMetrics.map((m, i) => ({
-        tier: i + 1,
-        valuePerKPoints: m.valuePerKPoints,
-        diff: i === 0 ? 0 : Math.abs(m.valuePerKPoints - valueMetrics[0].valuePerKPoints)
-      })));
-    }
+//     // Debug logging only in development
+//     if (!isLinear && valueMetrics.length >= 2) {
+//   console.log('=== NON-LINEAR DETECTED ===');
+//   console.log('Experience name:', experience.name);
+//   console.log('FLOATING_POINT_TOLERANCE:', CONSTANTS.FLOATING_POINT_TOLERANCE);
+//   console.log('Redemption tiers:', experience.redemptionTiers);
+//   console.log('Value metrics:', valueMetrics.map((m, i) => ({
+//     tier: i + 1,
+//     pointsRequired: experience.redemptionTiers[i]?.pointsRequired,
+//     poundValue: experience.redemptionTiers[i]?.poundValue,
+//     valuePerKPoints: m.valuePerKPoints,
+//     diff: i === 0 ? 0 : Math.abs(m.valuePerKPoints - valueMetrics[0].valuePerKPoints),
+//     exceedsTolerance: i === 0 ? false : Math.abs(m.valuePerKPoints - valueMetrics[0].valuePerKPoints) >= CONSTANTS.FLOATING_POINT_TOLERANCE
+//   })));
+//   console.log('========================');
+// }
 
     // Get best tier value for display
     const bestTier = getBestTier(experience.redemptionTiers, selectedCardType);
