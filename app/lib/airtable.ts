@@ -132,13 +132,22 @@ export async function getExperiences(): Promise<Experience[]> {
 
     const experiencesData = await experiencesResponse.json() as AirtableResponse<AirtableExperienceRecord>;
 
-    // Fetch redemption tiers - FIXED: Added month filter here too
-    const tiersUrl = new URL(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Redemption%20Tiers`);
-    tiersUrl.searchParams.set('filterByFormula', `MONTH({Month (from Experiences)}) = ${currentMonth}`); // ADDED: Month filter
-    tiersUrl.searchParams.set('sort[0][field]', 'Tier');
+    // Fetch redemption tiers with pagination
+const tiersUrl = new URL(`https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/Redemption%20Tiers`);
+  tiersUrl.searchParams.set('filterByFormula', `MONTH({Month (from Experiences)}) = ${currentMonth}`);
+  tiersUrl.searchParams.set('sort[0][field]', 'Tier');
 
+  // Fetch all pages of tier records
+  const allTierRecords: AirtableTierRecord[] = [];
+  let offset: string | undefined;
+
+  do {
+    if (offset) {
+      tiersUrl.searchParams.set('offset', offset);
+    }
+    
     const tiersResponse = await fetch(tiersUrl.toString(), { headers });
-
+    
     if (!tiersResponse.ok) {
       console.error('Tiers API error status:', tiersResponse.status);
       if (process.env.NODE_ENV === 'development') {
@@ -147,7 +156,17 @@ export async function getExperiences(): Promise<Experience[]> {
       }
       throw new Error(`Tiers API error: ${tiersResponse.status}`);
     }
-    const tiersData = await tiersResponse.json() as AirtableResponse<AirtableTierRecord>;
+    
+    const tiersData = await tiersResponse.json() as AirtableResponse<AirtableTierRecord> & { offset?: string };
+    allTierRecords.push(...tiersData.records);
+    offset = tiersData.offset;
+    
+  } while (offset);
+
+  console.log(`Fetched ${allTierRecords.length} tier records from Airtable (with pagination)`);
+
+// Use allTierRecords instead of tiersData.records in the rest of the code
+const tiersData = { records: allTierRecords };
 
     // Process experiences
     const experiences: Experience[] = experiencesData.records.map((record) => ({
