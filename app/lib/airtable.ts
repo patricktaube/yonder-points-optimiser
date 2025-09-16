@@ -84,7 +84,7 @@ const FALLBACK_THRESHOLDS = {
 } as const;
 
 // Constants for floating point comparisons and positioning
-const FLOATING_POINT_TOLERANCE = 0.05;
+const FLOATING_POINT_TOLERANCE = 0.10; // 10% tolerance for floating point comparisons
 const BADGE_POSITION_OFFSET = {
   TOP: -10,
   RIGHT: -10
@@ -222,7 +222,7 @@ export async function getCachedExperiences(forceRefresh = false): Promise<Experi
 
   try {
     // Only try filesystem in Node.js environment
-    if (typeof process !== 'undefined' && process.versions && process.versions.node) {
+    if (typeof window === 'undefined' && typeof process !== 'undefined' && process.versions?.node) {
       const fs = await import('fs');
       const { join } = await import('path');
       
