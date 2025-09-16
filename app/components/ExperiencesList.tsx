@@ -354,7 +354,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
           <div className="grid gap-4 md:grid-cols-3 max-w-4xl mx-auto">
             {(() => {
               // Get all experiences with their best tiers and calculate metrics
-              const allExperiencesWithMetrics = experiences
+              const allExperiencesWithMetrics = cityFilteredExperiences
                 .filter(exp => exp.redemptionTiers.length > 0)
                 .map(exp => {
                   const bestTier = getBestTier(exp.redemptionTiers, selectedCardType);
@@ -371,7 +371,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                 .slice(0, 3);
 
               // Calculate average for comparison
-              const allValidMetrics = experiences
+              const allValidMetrics = cityFilteredExperiences
                 .filter(exp => exp.redemptionTiers.length > 0)
                 .map(exp => {
                   const bestTier = getBestTier(exp.redemptionTiers, selectedCardType);

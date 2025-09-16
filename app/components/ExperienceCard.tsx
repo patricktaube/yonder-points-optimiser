@@ -144,7 +144,9 @@ export default function ExperienceCard({
       style={{ 
         backgroundColor: 'var(--card-background)',
         border: `2px solid var(--border-color)`,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
+        boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
+        outline: "none",
+        backgroundClip: "padding-box"
       }}
     >
       {/* Cursor glow effect - desktop only */}
