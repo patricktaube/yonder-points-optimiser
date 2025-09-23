@@ -100,6 +100,24 @@ function validateEnvironment() {
   }
 }
 
+// NEW: Function to load fallback data from committed file
+async function getFallbackData(): Promise<Experience[]> {
+  try {
+    const fs = await import('fs');
+    const { join } = await import('path');
+    const fallbackPath = join(process.cwd(), 'app', 'data', 'fallback-experiences.json');
+    
+    if (fs.existsSync(fallbackPath)) {
+      const data = JSON.parse(fs.readFileSync(fallbackPath, 'utf8'));
+      console.log(`Loaded ${data.length} experiences from fallback data`);
+      return data;
+    }
+  } catch (error) {
+    console.error('Failed to load fallback data:', error);
+  }
+  return [];
+}
+
 export async function getExperiences(): Promise<Experience[]> {
   try {
     validateEnvironment(); // Add environment validation
@@ -215,7 +233,9 @@ const tiersData = { records: allTierRecords };
     return experiences;
   } catch (error) {
     console.error('Error fetching from Airtable:', error);
-    return [];
+    // FIXED: Throw the error instead of returning empty array
+    // This allows getCachedExperiences to handle fallbacks properly
+    throw error;
   }
 }
 
@@ -233,19 +253,18 @@ export async function getCachedExperiences(forceRefresh = false): Promise<Experi
     return await getExperiences();
   }
 
-  // Always try memory cache first as a safety net
+  // Always try memory cache first as a safety net (unless force refresh)
   if (!forceRefresh && memoryCache && memoryCache.month === currentMonth) {
     console.log('Returning memory cached experiences');
     return memoryCache.data;
   }
 
   try {
-    // Only try filesystem in Node.js environment
+    // Try filesystem cache first
     if (typeof window === 'undefined' && typeof process !== 'undefined' && process.versions?.node) {
       const fs = await import('fs');
       const { join } = await import('path');
       
-      // Use project-local cache for development, /tmp for Vercel
       const cacheDir = process.env.VERCEL ? '/tmp' : join(process.cwd(), '.cache');
       const cacheFile = join(cacheDir, `experiences-${currentYear}-${currentMonth.toString().padStart(2, '0')}.json`);
       
@@ -254,6 +273,7 @@ export async function getCachedExperiences(forceRefresh = false): Promise<Experi
         fs.mkdirSync(cacheDir, { recursive: true });
       }
       
+      // Return filesystem cache if available and not force refreshing
       if (!forceRefresh && fs.existsSync(cacheFile)) {
         const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
         console.log(`Returning filesystem cached experiences from ${cacheFile}`);
@@ -262,32 +282,88 @@ export async function getCachedExperiences(forceRefresh = false): Promise<Experi
         return cached;
       }
       
-      if (forceRefresh) {
-        console.log('Force refresh requested, fetching fresh data');
-      } else {
-        console.log('No valid cache found, fetching fresh data');
+      // Try to fetch fresh data
+      try {
+        if (forceRefresh) {
+          console.log('Force refresh requested, fetching fresh data');
+        } else {
+          console.log('No valid cache found, fetching fresh data');
+        }
+        
+        const experiences = await getExperiences();
+        
+        // Only cache if we got valid data
+        if (experiences.length > 0) {
+          // Cache to filesystem
+          fs.writeFileSync(cacheFile, JSON.stringify(experiences));
+          console.log(`Cached ${experiences.length} experiences to ${cacheFile}`);
+          
+          // Also cache to memory
+          memoryCache = { data: experiences, timestamp: Date.now(), month: currentMonth };
+          return experiences;
+        } else {
+          // If we got empty data, check if we have any cached data to fall back to
+          if (fs.existsSync(cacheFile)) {
+            console.log('API returned empty data, falling back to filesystem cache');
+            const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+            memoryCache = { data: cached, timestamp: Date.now(), month: currentMonth };
+            return cached;
+          }
+        }
+        
+      } catch (apiError) {
+        console.error('API call failed:', apiError);
+        
+        // Fallback to filesystem cache if available
+        if (fs.existsSync(cacheFile)) {
+          console.log('API failed, falling back to filesystem cache');
+          const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf8'));
+          memoryCache = { data: cached, timestamp: Date.now(), month: currentMonth };
+          return cached;
+        }
+        
+        // Fallback to memory cache if available
+        if (memoryCache && memoryCache.data.length > 0) {
+          console.log('API failed, falling back to memory cache');
+          return memoryCache.data;
+        }
+        
+        // If no cache available, re-throw the error for final fallback handling below
+        throw apiError;
       }
-      
-      const experiences = await getExperiences();
-      
-      // Cache to filesystem
-      fs.writeFileSync(cacheFile, JSON.stringify(experiences));
-      console.log(`Cached ${experiences.length} experiences to ${cacheFile}`);
-      
-      // Also cache to memory
-      memoryCache = { data: experiences, timestamp: Date.now(), month: currentMonth };
-      return experiences;
     }
   } catch (fsError) {
-    console.log('Filesystem caching failed, using memory cache');
-    console.error('FS Error:', fsError);
+    console.log('Filesystem caching failed:', fsError);
   }
   
-  // Fallback: fetch fresh and cache in memory only
-  console.log('Using memory-only caching');
-  const experiences = await getExperiences();
-  memoryCache = { data: experiences, timestamp: Date.now(), month: currentMonth };
-  return experiences;
+  // Fallback: try memory cache one more time
+  if (memoryCache && memoryCache.data.length > 0) {
+    console.log('Using memory cache as final fallback');
+    return memoryCache.data;
+  }
+  
+  // Last resort: try to fetch fresh (this will likely fail but we need to try)
+  console.log('No cache available, attempting fresh fetch as last resort');
+  try {
+    const experiences = await getExperiences();
+    if (experiences.length > 0) {
+      memoryCache = { data: experiences, timestamp: Date.now(), month: currentMonth };
+    }
+    return experiences;
+  } catch (error) {
+    console.error('Fresh fetch failed, trying fallback data:', error);
+    
+    // NEW: Try fallback data before giving up completely
+    const fallbackData = await getFallbackData();
+    if (fallbackData.length > 0) {
+      console.log('Using fallback data from app/data/');
+      memoryCache = { data: fallbackData, timestamp: Date.now(), month: currentMonth };
+      return fallbackData;
+    }
+    
+    console.error('All fallbacks failed:', error);
+    return []; // Return empty array as absolute last resort
+  }
 }
 
 // Helper function to get unique categories in preferred order
