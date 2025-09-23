@@ -104,44 +104,14 @@ function validateEnvironment() {
 // Enhanced version with better logging
 async function getFallbackData(): Promise<Experience[]> {
   try {
-    console.log('Attempting to load fallback data...');
-    
-    const fs = await import('fs');
-    const { join } = await import('path');
-    
-    const cwd = process.cwd();
-    console.log('Current working directory:', cwd);
-    
-    const fallbackPath = join(cwd, 'app', 'data', 'fallback-experiences.json');
-    console.log('Fallback path:', fallbackPath);
-    
-    // Check if directory exists
-    const dirPath = join(cwd, 'app', 'data');
-    const dirExists = fs.existsSync(dirPath);
-    console.log('Data directory exists:', dirExists);
-    
-    if (dirExists) {
-      const files = fs.readdirSync(dirPath);
-      console.log('Files in data directory:', files);
-    }
-    
-    const fileExists = fs.existsSync(fallbackPath);
-    console.log('Fallback file exists:', fileExists);
-    
-    if (fileExists) {
-      const stats = fs.statSync(fallbackPath);
-      console.log('File size:', stats.size, 'bytes');
-      
-      const data = JSON.parse(fs.readFileSync(fallbackPath, 'utf8'));
-      console.log(`Successfully loaded ${data.length} experiences from fallback data`);
-      return data;
-    } else {
-      console.log('Fallback file does not exist at:', fallbackPath);
-    }
+    console.log('Loading embedded fallback data...');
+    const { fallbackExperiences } = await import('../data/fallback-data');
+    console.log(`Loaded ${fallbackExperiences.length} experiences from embedded fallback data`);
+    return fallbackExperiences;
   } catch (error) {
-    console.error('Failed to load fallback data:', error);
+    console.error('Failed to load embedded fallback data:', error);
+    return [];
   }
-  return [];
 }
 
 export async function getExperiences(): Promise<Experience[]> {
