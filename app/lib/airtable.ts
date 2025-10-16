@@ -277,14 +277,23 @@ export async function getCachedExperiences(forceRefresh = false): Promise<Experi
         memoryCache = { data: cached, timestamp: Date.now(), month: currentMonth };
         return cached;
       }
-      
-      // Try to fetch fresh data
-      try {
-        if (forceRefresh) {
-          console.log('Force refresh requested, fetching fresh data');
-        } else {
-          console.log('No valid cache found, fetching fresh data');
+
+      // If no cache exists and NOT forcing refresh, use fallback data
+      if (!forceRefresh) {
+        console.log('No cache found, using fallback data to preserve API quota');
+        const fallbackData = await getFallbackData();
+        if (fallbackData.length > 0) {
+          // Write to filesystem cache so next request is faster
+          fs.writeFileSync(cacheFile, JSON.stringify(fallbackData));
+          console.log(`Wrote fallback data to cache: ${cacheFile}`);
+          memoryCache = { data: fallbackData, timestamp: Date.now(), month: currentMonth };
+          return fallbackData;
         }
+      }
+
+      // Only fetch from API if explicitly forced via ?refresh=true
+      try {
+        console.log('Force refresh requested - fetching from Airtable API');
         
         const experiences = await getExperiences();
         
