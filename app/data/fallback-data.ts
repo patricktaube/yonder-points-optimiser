@@ -1,5 +1,5 @@
 // app/data/fallback-data.ts
-// Auto-generated - Last updated: 2025-11-03T10:15:03.662Z
+// Auto-generated - Last updated: 2025-11-03T10:18:38.354Z
 // Data for: November 2025
 
 import { Experience } from '../lib/airtable';
@@ -1568,7 +1568,7 @@ export const fallbackExperiences: Experience[] = [
       {
         "id": "rec0b7QmxxzCfN61B",
         "tierNumber": 1,
-        "pointsRequired": 2250,
+        "pointsRequired": 2750,
         "poundValue": 10
       },
       {
@@ -1970,7 +1970,7 @@ export const fallbackExperiences: Experience[] = [
       {
         "id": "recbVQ61uxdI0ldHX",
         "tierNumber": 3,
-        "pointsRequired": 2750,
+        "pointsRequired": 10540,
         "poundValue": 28
       }
     ]
