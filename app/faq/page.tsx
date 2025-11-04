@@ -54,7 +54,7 @@ export default function FAQ() {
         key = "buy-coffee-link"
         href="https://www.buymeacoffee.com/yonderpointsoptimiser"
         >
-        <img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=yonderpointsoptimiser&button_colour=f28f44&font_colour=000000&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00" />
+        <img src="https://img.buymeacoffee.com/button-api/?text=Buy me a coffee&emoji=&slug=yonderpointsoptimiser&button_colour=f28f44&font_colour=000000&font_family=Poppins&outline_colour=000000&coffee_colour=FFDD00" alt="Buy Me a Coffee" />
         </Link>
       ]
     },

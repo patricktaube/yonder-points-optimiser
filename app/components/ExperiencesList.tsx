@@ -386,7 +386,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 
               return allExperiencesWithMetrics.map((item, index) => {
                 if (!item) return null;
-                const { experience, tier, metrics } = item;
+                const { experience, metrics } = item;
                 const rankEmojis = ['🥇', '🥈', '🥉'];
                 const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
 
@@ -540,7 +540,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                 </div>
 
                 <div className="grid gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-                  {displayExperiences.map((experience, index) => (
+                  {displayExperiences.map((experience, _index) => (
                     <ExperienceCard
                       key={experience.id}
                       experience={experience}
