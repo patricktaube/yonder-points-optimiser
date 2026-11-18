@@ -69,31 +69,40 @@ export function formatMonth(month: string): string {
 
 // --- Categories --------------------------------------------------------------
 
-// Helper function to get unique categories in preferred order
+// The single source of truth for category display order and icons. Names must
+// match the Sheet's `lists` tab exactly (e.g. "Fit&Well"). To add a category,
+// add a line here. Categories in the data but missing here still show up
+// (after these, with the default icon), so nothing disappears by accident.
+export const CATEGORIES = [
+  { name: 'Dining', icon: '🍽️' },
+  { name: 'Travel', icon: '🌴' },
+  { name: 'Flights', icon: '✈️' },
+  { name: 'Hotels', icon: '🏨' },
+  { name: 'Shopping', icon: '🛍️' },
+  { name: 'Entertainment', icon: '🎉' },
+  { name: 'Theatre', icon: '🎭' },
+  { name: 'Wellness', icon: '🧘' },
+  { name: 'Fit&Well', icon: '💪' },
+  { name: 'Lounges', icon: '🛋️' },
+  { name: 'Treats', icon: '🥐' },
+  { name: 'Pubs', icon: '🍻' },
+] as const;
+
+const DEFAULT_CATEGORY_ICON = '🎉';
+const CATEGORY_ORDER: readonly string[] = CATEGORIES.map((c) => c.name);
+
+export function getCategoryIcon(category: string): string {
+  return CATEGORIES.find((c) => c.name === category)?.icon ?? DEFAULT_CATEGORY_ICON;
+}
+
+// Unique categories present in the data, in CATEGORIES order.
 export function getCategories(experiences: Experience[]): string[] {
   const categoriesFromData = new Set(experiences.map((exp) => exp.category));
 
-  // Define preferred order - you can modify this array to change the order
-  const preferredOrder = [
-    'Dining',
-    'Travel',
-    'Hotels',
-    'Shopping',
-    'Drinks',
-    'Coffee',
-    'Fitness',
-    'Entertainment',
-    'Wellness',
-    'Experiences'
-  ];
+  const ordered = CATEGORY_ORDER.filter((name) => categoriesFromData.has(name));
+  const unlisted = [...categoriesFromData].filter((name) => !CATEGORY_ORDER.includes(name));
 
-  // Start with preferred order, only including categories that exist in data
-  const orderedCategories = preferredOrder.filter(cat => categoriesFromData.has(cat));
-
-  // Add any remaining categories that weren't in our preferred order
-  const remainingCategories = Array.from(categoriesFromData).filter(cat => !preferredOrder.includes(cat));
-
-  return [...orderedCategories, ...remainingCategories];
+  return [...ordered, ...unlisted];
 }
 
 // --- Value maths -------------------------------------------------------------

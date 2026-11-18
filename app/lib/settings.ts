@@ -6,7 +6,7 @@ export interface UserSettings {
   hasCompletedSetup: boolean;
 }
 
-const DEFAULT_SETTINGS: UserSettings = {
+export const DEFAULT_SETTINGS: UserSettings = {
   cardType: 'credit_paid',
   city: 'London',
   hasCompletedSetup: false
