@@ -1,4 +1,4 @@
-import { CardType, Experience } from './airtable';
+import { CardType, Experience } from './experiences';
 
 export interface UserSettings {
   cardType: CardType;
@@ -41,7 +41,7 @@ export function saveSettings(settings: UserSettings): void {
 }
 
 export function getCities(experiences: Experience[]): string[] {
-  const cities = Array.from(new Set(experiences.flatMap(exp => exp.city))).sort();
+  const cities = Array.from(new Set(experiences.flatMap(exp => exp.cities))).sort();
   
   // Put London first if it exists
   const londonIndex = cities.indexOf('London');

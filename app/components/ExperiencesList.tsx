@@ -3,12 +3,13 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { UserSettings, loadSettings, saveSettings, getCities } from '../lib/settings';
-import { Experience, getCategories, calculateValueMetrics, getBestTier, CARD_TYPES, CardType, calculateBadgeThresholds } from '../lib/airtable';
+import { Experience, getCategories, calculateValueMetrics, CARD_TYPES, CardType, calculateBadgeThresholds } from '../lib/experiences';
 import ExperienceCard from './ExperienceCard';
 import Link from 'next/link';
 
 interface ExperiencesListProps {
   experiences: Experience[];
+  monthLabel: string; // e.g. "November 2025", the month these rates are for
 }
 
 // Category icons mapping
@@ -27,7 +28,7 @@ const categoryIcons: Record<string, string> = {
   'Default': '🎉'
 };
 
-export default function ExperiencesList({ experiences }: ExperiencesListProps) {
+export default function ExperiencesList({ experiences, monthLabel }: ExperiencesListProps) {
   const [settings, setSettings] = useState<UserSettings>(() => loadSettings());
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -54,7 +55,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 
   // Filter by city only for badge calculations
   const cityFilteredExperiences = experiences.filter((exp) => 
-    exp.city.includes(settings.city)
+    exp.cities.includes(settings.city)
   );
 
   // Calculate badge thresholds using city-specific experiences
@@ -92,18 +93,11 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
 
   // Sort experiences within each category by best value
   Object.keys(experiencesByCategory).forEach((category) => {
-    const categoryExperiences = experiencesByCategory[category]
-      .filter((exp) => exp.redemptionTiers.length > 0)
-      .sort((a, b) => {
-        const aBestTier = getBestTier(a.redemptionTiers, selectedCardType);
-        const bBestTier = getBestTier(b.redemptionTiers, selectedCardType);
-        
-        if (!aBestTier || !bBestTier) return 0;
-        
-        const aMetrics = calculateValueMetrics(aBestTier, selectedCardType);
-        const bMetrics = calculateValueMetrics(bBestTier, selectedCardType);
-        return bMetrics.effectiveReturn - aMetrics.effectiveReturn;
-      });
+    const categoryExperiences = experiencesByCategory[category].sort(
+      (a, b) =>
+        calculateValueMetrics(b, selectedCardType).effectiveReturn -
+        calculateValueMetrics(a, selectedCardType).effectiveReturn
+    );
 
     experiencesByCategory[category] = categoryExperiences;
   });
@@ -349,43 +343,29 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                 <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
                     This month&apos;s best redemption rates
                 </h2>
+                <p className="text-sm" style={{ color: 'var(--yonder-navy)', opacity: 0.7 }}>
+                    Rates for {monthLabel}
+                </p>
             </div>
 
           <div className="grid gap-4 md:grid-cols-3 max-w-4xl mx-auto">
             {(() => {
-              // Get all experiences with their best tiers and calculate metrics
-              const allExperiencesWithMetrics = cityFilteredExperiences
-                .filter(exp => exp.redemptionTiers.length > 0)
-                .map(exp => {
-                  const bestTier = getBestTier(exp.redemptionTiers, selectedCardType);
-                  if (!bestTier) return null;
-                  const metrics = calculateValueMetrics(bestTier, selectedCardType);
-                  return {
-                    experience: exp,
-                    tier: bestTier,
-                    metrics
-                  };
-                })
-                .filter(item => item !== null)
-                .sort((a, b) => b!.metrics.effectiveReturn - a!.metrics.effectiveReturn)
-                .slice(0, 3);
+              // Calculate metrics for every experience in the city
+              const allExperiencesWithMetrics = cityFilteredExperiences.map(exp => ({
+                experience: exp,
+                metrics: calculateValueMetrics(exp, selectedCardType)
+              }));
 
               // Calculate average for comparison
-              const allValidMetrics = cityFilteredExperiences
-                .filter(exp => exp.redemptionTiers.length > 0)
-                .map(exp => {
-                  const bestTier = getBestTier(exp.redemptionTiers, selectedCardType);
-                  if (!bestTier) return null;
-                  return calculateValueMetrics(bestTier, selectedCardType);
-                })
-                .filter(m => m !== null);
-              
-              const averageReturn = allValidMetrics.length > 0 
-                ? allValidMetrics.reduce((sum, m) => sum + m!.effectiveReturn, 0) / allValidMetrics.length
+              const averageReturn = allExperiencesWithMetrics.length > 0
+                ? allExperiencesWithMetrics.reduce((sum, item) => sum + item.metrics.effectiveReturn, 0) / allExperiencesWithMetrics.length
                 : 0;
 
-              return allExperiencesWithMetrics.map((item, index) => {
-                if (!item) return null;
+              const topThree = [...allExperiencesWithMetrics]
+                .sort((a, b) => b.metrics.effectiveReturn - a.metrics.effectiveReturn)
+                .slice(0, 3);
+
+              return topThree.map((item, index) => {
                 const { experience, metrics } = item;
                 const rankEmojis = ['🥇', '🥈', '🥉'];
                 const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
@@ -418,11 +398,6 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                       <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
                         {experience.name}
                       </h3>
-                      {experience.description && (
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                          {experience.description}
-                        </p>
-                      )}
                     </div>
 
                     {/* Value Metrics */}

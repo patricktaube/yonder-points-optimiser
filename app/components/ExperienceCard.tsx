@@ -2,7 +2,7 @@
 'use client';
 
 import { useMemo, useState, useRef } from 'react';
-import { Experience, calculateValueMetrics, getBestTier, CardType, BadgeThresholds, getExperienceBadge, CONSTANTS } from '../lib/airtable';
+import { Experience, calculateValueMetrics, CardType, BadgeThresholds, getExperienceBadge, CONSTANTS } from '../lib/experiences';
 
 interface ExperienceCardProps {
   experience: Experience;
@@ -20,55 +20,13 @@ export default function ExperienceCard({
   const [isHovered, setIsHovered] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
-  const memoizedMetrics = useMemo(() => {
-    const valueMetrics = experience.redemptionTiers.map(tier => 
-      calculateValueMetrics(tier, selectedCardType)
-    );
-
-    // Check if redemption rates are linear
-    const isLinear = valueMetrics.length >= 2 &&
-      valueMetrics.every((metrics, index) => {
-        if (index === 0) return true;
-        return Math.abs(metrics.valuePerKPoints - valueMetrics[0].valuePerKPoints) < CONSTANTS.FLOATING_POINT_TOLERANCE;
-      });
-
-//     // Debug logging only in development
-//     if (!isLinear && valueMetrics.length >= 2) {
-//   console.log('=== NON-LINEAR DETECTED ===');
-//   console.log('Experience name:', experience.name);
-//   console.log('FLOATING_POINT_TOLERANCE:', CONSTANTS.FLOATING_POINT_TOLERANCE);
-//   console.log('Redemption tiers:', experience.redemptionTiers);
-//   console.log('Value metrics:', valueMetrics.map((m, i) => ({
-//     tier: i + 1,
-//     pointsRequired: experience.redemptionTiers[i]?.pointsRequired,
-//     poundValue: experience.redemptionTiers[i]?.poundValue,
-//     valuePerKPoints: m.valuePerKPoints,
-//     diff: i === 0 ? 0 : Math.abs(m.valuePerKPoints - valueMetrics[0].valuePerKPoints),
-//     exceedsTolerance: i === 0 ? false : Math.abs(m.valuePerKPoints - valueMetrics[0].valuePerKPoints) >= CONSTANTS.FLOATING_POINT_TOLERANCE
-//   })));
-//   console.log('========================');
-// }
-
-    // Get best tier value for display
-    const bestTier = getBestTier(experience.redemptionTiers, selectedCardType);
-    const bestMetrics = bestTier ? calculateValueMetrics(bestTier, selectedCardType) : null;
-
-    // Get badge type
-    const badgeType = badgeThresholds ? getExperienceBadge(
-      experience, 
-      selectedCardType, 
-      badgeThresholds, 
-    ): null ;
-
-    return {
-      isLinear,
-      bestTier,
-      bestMetrics,
-      badgeType
-    };
-  }, [experience, selectedCardType, badgeThresholds]);
-
-  const { isLinear, bestMetrics, badgeType } = memoizedMetrics;
+  // One rate per experience now, so this is just the value maths + badge.
+  const { metrics, badgeType } = useMemo(() => ({
+    metrics: calculateValueMetrics(experience, selectedCardType),
+    badgeType: badgeThresholds
+      ? getExperienceBadge(experience, selectedCardType, badgeThresholds)
+      : null,
+  }), [experience, selectedCardType, badgeThresholds]);
 
   // Cursor tracking handlers
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -185,39 +143,17 @@ export default function ExperienceCard({
         </h3>
       </div>
 
-      {/* Rest of content stays the same */}
-      {experience.description && (
-        <p className="text-sm leading-relaxed line-clamp-2 mb-3" style={{ color: 'var(--foreground)', opacity: 0.7 }}>
-          {experience.description}
-        </p>
-      )}
-
       {/* Main Value Display */}
-      {bestMetrics && (
-        <div className="text-center py-1 px-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--light-peach)' }}>
-          <div className="text-3xl font-black mb-1" style={{ color: 'var(--yonder-navy)' }}>
-            £{bestMetrics.valuePerKPoints.toFixed(2)}
-          </div>
-          <div className="text-lg font-semibold mb-2" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
-            per 1,000 points
-          </div>
-          <div className="text-sm font-medium" style={{ color: 'var(--yonder-orange)' }}>
-            {bestMetrics.effectiveReturn.toFixed(1)}% return rate
-          </div>
+      <div className="text-center py-1 px-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--light-peach)' }}>
+        <div className="text-3xl font-black mb-1" style={{ color: 'var(--yonder-navy)' }}>
+          £{metrics.valuePerKPoints.toFixed(2)}
         </div>
-      )}
-
-      {/* Tier Information */}
-      <div className="space-y-2">
-        {!isLinear && (
-          <div className="flex items-center gap-2 text-xs font-semibold mt-2 px-3 py-1 rounded-full" style={{ 
-            backgroundColor: 'rgba(218, 97, 32, 0.1)',
-            color: 'var(--yonder-orange)' 
-          }}>
-            <span>⚠️</span>
-            <span>Non-linear rates - check tiers carefully</span>
-          </div>
-        )}
+        <div className="text-lg font-semibold mb-2" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
+          per 1,000 points
+        </div>
+        <div className="text-sm font-medium" style={{ color: 'var(--yonder-orange)' }}>
+          {metrics.effectiveReturn.toFixed(1)}% return rate
+        </div>
       </div>
     </div>
   );
