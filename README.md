@@ -1,44 +1,102 @@
-# Yonder Points Optimizer
+# Yonder Points Optimiser
 
-A lightweight tool for finding the best value redemptions with your Yonder credit card points. Compare redemption rates across different experiences and card tiers to maximize your points' value.
+A lightweight tool for finding the best-value redemptions for your Yonder credit card points. It compares redemption rates across experiences for your city and card type.
 
 ## 🚀 Features
 
-- **Multi-tier Support**: Compare rates across Free, Paid, and Premium Yonder card tiers
-- **City-based Filtering**: Browse experiences available in your city (London, Manchester, Birmingham, Leeds)
-- **Personalized Settings**: Save your card type and city preferences with automatic persistence
-- **Best Value Highlighting**: Automatically identifies and badges the best redemption opportunities based on dynamic thresholds.
-- **Category Filtering**: Browse experiences by category (Dining, Travel, Shopping, etc.)
-- **Top 3 Rankings**: Showcases the best overall redemption rates for your location
-- **Mobile Optimized**: Responsive design with mobile-specific layouts
-- **Real-time Data**: Pulls live data from Airtable for up-to-date redemption rates
+- **Card types**: Debit Free, Debit Paid, Credit Free and Credit Paid, each with its own earn rate (`CARD_TYPES` in `app/lib/experiences.ts`)
+- **City filtering**: London, Birmingham, Bristol & Bath, Edinburgh and Manchester (taken from the Sheet's `lists` tab)
+- **Saved settings**: card type and city are stored in the browser (localStorage)
+- **Badges**: "Great Value" and "Bad Deal" based on percentiles of this month's return rates in your city
+- **Categories and Top 3**: browse by category, plus the three best rates in your city
+- **Month label**: shows which month the rates are for (the latest month in the Sheet)
 
 ## 🛠️ Tech Stack
 
-- **Framework**: Next.js 15.4.3 with App Router
-- **Language**: TypeScript
+- **Framework**: Next.js 15 (App Router), React 19, TypeScript
 - **Styling**: Tailwind CSS v4
-- **Database**: Airtable
-- **Storage**: LocalStorage for user preferences
+- **Data**: private Google Sheet, read with a service account (no extra npm packages)
 - **Deployment**: Vercel
-- **UI Components**: Custom React components with interactive features
-
-## 🎯 User Experience
-
-- **Smart Defaults**: London location and Credit Paid card pre-selected for optimal experience
-- **Guided Setup**: New users get a welcome flow to set their preferences
-- **Instant Filtering**: Real-time filtering by category and city with smooth transitions
 
 ## 🏗️ Architecture
 
-- **Data Structure**: City-specific experience records in Airtable for flexible pricing
-- **State Management**: React hooks with localStorage persistence
-- **Dynamic Content**: City list automatically extracted from available data
-- **Performance Optimized**: Efficient filtering and memoized calculations
+- `app/lib/sheets.ts` (server only): signs a service-account JWT with Node's `crypto`, fetches the Sheet in one `values:batchGet` call, and parses and validates the rows.
+- `app/lib/experiences.ts`: the `Experience` type, card types, category order/icons, value maths and badge logic. Safe to import from client components.
+- `app/page.tsx`: static page with **ISR**, regenerated at most hourly (`revalidate = 3600`). It sends only the latest month's experiences to the browser. If the Sheet can't be read during regeneration, the last good page keeps being served. If it can't be read at build time, the build fails.
+- `app/components/ExperiencesList.tsx`: filtering, grouping, top 3 and settings UI.
 
 ## 📊 Data Model
 
-- **Experiences**: Each experience record includes city, category, and redemption tiers
-- **Multi-city Support**: Same experience can have different rates across cities
-- **Monthly Updates**: Content automatically filtered by current month
-- **Flexible Tiers**: Support for multiple redemption levels per experience
+- One row per experience per month. Past months stay in the Sheet as history.
+- Each row stores only the **middle tier** (points and £). Yonder's tiers are 1×/2×/4× of the same rate, so one pair is enough.
+- `£ per 1,000 points = pounds / points × 1000`
+- `return % = pounds / (points / card's points per £) × 100`
+
+## 📝 Data: Google Sheet
+
+Rates live in a **private** Google Sheet. The site reads it through the Google Sheets API using a service account with Viewer access. There is no public link.
+
+### Tab `data` (one row per experience per month)
+
+The site reads columns A–F. Row 1 is the header.
+
+| Col | Header | Example | Validation / formula (row 2, fill down) |
+|---|---|---|---|
+| A | month | `2025-11` | Format the column as **Plain text** first (Format → Number → Plain text), or Sheets turns it into a date. Validation: custom formula `=REGEXMATCH(TO_TEXT(A2), "^\d{4}-\d{2}$")`, reject input |
+| B | experience | `Angel Gyms` | none |
+| C | category | `Fit&Well` | Dropdown (from a range): `=lists!$A$2:$A` |
+| D | cities | `All` or `London, Manchester` | Free text. `All` = every city in `lists!B`. |
+| E | points | `35340` | Middle tier points. Validation: number greater than 0 |
+| F | pounds | `160` | Middle tier £ value. Validation: number greater than 0 |
+| G | rate_per_1k | (formula) | `=IF(AND(ISNUMBER(E2), ISNUMBER(F2), E2>0), F2/E2*1000, "")` |
+| H | check | (formula) | see below |
+
+Check formula for **H2** (shows ⚠️ text when something looks wrong, otherwise blank):
+
+```
+=IF(B2="", "", TRIM(
+  IF(COUNTIFS($A:$A, A2, $B:$B, B2) > 1, "⚠️ duplicate ", "") &
+  IF(OR(A2="", C2="", D2="", E2="", F2=""), "⚠️ missing value ", "") &
+  IF(AND(ISNUMBER(E2), ISNUMBER(F2), E2>0),
+     IF(OR(F2/E2*1000 < 1, F2/E2*1000 > 8), "⚠️ rate outside £1–£8 ", ""),
+     IF(AND(E2<>"", F2<>""), "⚠️ points/pounds not numbers ", ""))
+))
+```
+
+Columns G and H are for your reference only. The site recalculates the rate itself and ignores anything past column F.
+
+Optional extras: View → Freeze → 1 row, and a filter view per month.
+
+### Tab `lists`
+
+| A (category) | B (city) |
+|---|---|
+| Dining | London |
+| Entertainment | Birmingham |
+| Fit&Well | Bristol & Bath |
+| Lounges | Edinburgh |
+| Shopping | Manchester |
+| Travel | |
+
+The site reads `lists!B2:B` to expand `All`. Adding a new city there makes it part of `All` for every month, including past ones.
+
+### Monthly update
+
+Add one row per experience with that month's `YYYY-MM`, the middle tier's points and £ value, and check that column H is blank. The site picks up the latest month within an hour.
+
+### One-time Google Cloud setup
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com), create a project (free), then open **APIs & Services → Library** and enable the **Google Sheets API**.
+2. Go to **IAM & Admin → Service Accounts → Create service account**. Give it any name (e.g. `yonder-sheet-reader`), skip the optional roles, and click Done.
+3. Open the service account → **Keys → Add key → Create new key → JSON**. A `.json` file downloads. Treat it like a password.
+4. In the Sheet, click **Share**, paste the service account's `client_email` (from the JSON) and give it **Viewer** access. Untick "Notify".
+5. Add these environment variables in Vercel (tick **Production and Preview**) and in `.env.local`:
+
+   | Variable | Value |
+   |---|---|
+   | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | `client_email` from the JSON |
+   | `GOOGLE_PRIVATE_KEY` | `private_key` from the JSON, pasted as-is including the `\n`s. The code converts them to real line breaks. |
+   | `GOOGLE_SHEET_ID` | The long ID in the Sheet URL: `docs.google.com/spreadsheets/d/<THIS PART>/edit` |
+
+   In `.env.local`, wrap the key in double quotes: `GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nMII...\n-----END PRIVATE KEY-----\n"`. In Vercel, paste it without quotes.
+6. Delete the downloaded JSON file once the variables are saved. If it leaks, delete the key in Google Cloud and create a new one.

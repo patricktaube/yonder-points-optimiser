@@ -2,45 +2,49 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { UserSettings, loadSettings, saveSettings, getCities } from '../lib/settings';
-import { Experience, getCategories, calculateValueMetrics, getBestTier, CARD_TYPES, CardType, calculateBadgeThresholds } from '../lib/airtable';
+import { UserSettings, DEFAULT_SETTINGS, loadSettings, saveSettings, getCities } from '../lib/settings';
+import { Experience, getCategories, getCategoryIcon, calculateValueMetrics, CARD_TYPES, CardType, calculateBadgeThresholds } from '../lib/experiences';
 import ExperienceCard from './ExperienceCard';
 import Link from 'next/link';
 
 interface ExperiencesListProps {
   experiences: Experience[];
+  monthLabel: string; // e.g. "November 2025", the month these rates are for
 }
 
-// Category icons mapping
-const categoryIcons: Record<string, string> = {
-  'Dining': '🍽️',
-  'Travel': '🌴',
-  "Flights": '✈️',
-  'Hotels': '🏨',
-  'Shopping': '🛍️',
-  'Fit&Well': '💪',
-  'Theatre': '🎭',
-  'Lounges': '🛋️',
-  'Treats': '🥐',
-  "Pubs": "🍻",
-  'Wellness': '🧘',
-  'Default': '🎉'
-};
+// How many experiences each category shows before the "Show more" button.
+const VISIBLE_PER_CATEGORY = 4;
 
-export default function ExperiencesList({ experiences }: ExperiencesListProps) {
-  const [settings, setSettings] = useState<UserSettings>(() => loadSettings());
+// Both numbers being compared are percentages, so their difference is in
+// percentage points: 5% vs 3% is "+2 percentage points", not "+2%" (which
+// would mean 3.06%). Spelled out so it can't be confused with Yonder points.
+function formatVsAverage(difference: number): string {
+  const sign = difference >= 0 ? '+' : '−';
+  return `${sign}${Math.abs(difference).toFixed(1)} percentage points vs average`;
+}
+
+export default function ExperiencesList({ experiences, monthLabel }: ExperiencesListProps) {
+  // Start from the defaults so the first browser render matches the
+  // server-rendered HTML. The server can't see localStorage, so reading it
+  // here would make the two differ (a "hydration mismatch": a flash of the
+  // wrong content plus a console warning). Saved settings load in the effect
+  // below, which only runs in the browser, after the first render.
+  const [settings, setSettings] = useState<UserSettings>(DEFAULT_SETTINGS);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isCardDropdownOpen, setIsCardDropdownOpen] = useState(false);
   const [isCityDropdownOpen, setIsCityDropdownOpen] = useState(false);
 
-  // Show welcome modal on first visit, hide after settings are saved
+  // Load saved settings once. The welcome modal is decided here, after we know
+  // what was saved, so returning visitors never see it flash open.
   useEffect(() => {
-    if (!settings.hasCompletedSetup) {
+    const saved = loadSettings();
+    setSettings(saved);
+    if (!saved.hasCompletedSetup) {
       setShowSettingsModal(true);
     }
-  }, [settings.hasCompletedSetup]);
+  }, []);
 
   useEffect(() => {
     if (settings.hasCompletedSetup) {
@@ -48,65 +52,67 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
     }
   }, [settings]);
 
-  const cities = getCities(experiences);
-  const selectedCardType = settings.cardType; // For backward compatibility with existing code
+  const selectedCardType = settings.cardType;
 
+  // useMemo caches a result and only recalculates when something in its
+  // dependency list changes. Each step below depends on the one before, so
+  // the chain must be memoised end to end: one un-memoised array (a new
+  // object every render) makes everything after it recalculate every time.
+  const cities = useMemo(() => getCities(experiences), [experiences]);
 
   // Filter by city only for badge calculations
-  const cityFilteredExperiences = experiences.filter((exp) => 
-    exp.city.includes(settings.city)
+  const cityFilteredExperiences = useMemo(
+    () => experiences.filter((exp) => exp.cities.includes(settings.city)),
+    [experiences, settings.city]
   );
 
   // Calculate badge thresholds using city-specific experiences
-  const badgeThresholds = useMemo(() => 
-    calculateBadgeThresholds(cityFilteredExperiences, selectedCardType), 
+  const badgeThresholds = useMemo(() =>
+    calculateBadgeThresholds(cityFilteredExperiences, selectedCardType),
     [cityFilteredExperiences, selectedCardType]
   );
 
+  const categories = useMemo(() => getCategories(cityFilteredExperiences), [cityFilteredExperiences]);
+
+  // If the chosen category doesn't exist in the newly chosen city, show "All".
+  // This is derived while rendering rather than "fixed" with setState during
+  // render, which React discourages because it triggers an extra re-render.
+  const activeCategory =
+    selectedCategory && categories.includes(selectedCategory) ? selectedCategory : null;
+
   // Then filter by category for display
-  const filteredExperiences = cityFilteredExperiences.filter((exp) => 
-    selectedCategory ? exp.category === selectedCategory : true
+  const filteredExperiences = useMemo(
+    () => cityFilteredExperiences.filter((exp) => !activeCategory || exp.category === activeCategory),
+    [cityFilteredExperiences, activeCategory]
   );
 
-  const categories = getCategories(cityFilteredExperiences);
+  // Group experiences by category (in category order), best value first
+  const experiencesByCategory = useMemo(() => {
+    const grouped: Record<string, Experience[]> = {};
+    categories.forEach((category) => {
+      grouped[category] = [];
+    });
+    filteredExperiences.forEach((exp) => grouped[exp.category]?.push(exp));
 
-  if (selectedCategory && !categories.includes(selectedCategory)) {
-  setSelectedCategory(null);
-  }
+    const returnOf = (exp: Experience) => calculateValueMetrics(exp, selectedCardType).effectiveReturn;
+    Object.values(grouped).forEach((list) => list.sort((a, b) => returnOf(b) - returnOf(a)));
+    return grouped;
+  }, [categories, filteredExperiences, selectedCardType]);
 
-  
-  // Group experiences by category and maintain the same order as categories
-  const experiencesByCategory: Record<string, Experience[]> = {};
-  
-  // Initialize with empty arrays in the correct order
-  categories.forEach(category => {
-    experiencesByCategory[category] = [];
-  });
-  
-  // Fill the arrays with experiences
-  filteredExperiences.forEach(exp => {
-    if (experiencesByCategory[exp.category]) {
-      experiencesByCategory[exp.category].push(exp);
-    }
-  });
-
-  // Sort experiences within each category by best value
-  Object.keys(experiencesByCategory).forEach((category) => {
-    const categoryExperiences = experiencesByCategory[category]
-      .filter((exp) => exp.redemptionTiers.length > 0)
-      .sort((a, b) => {
-        const aBestTier = getBestTier(a.redemptionTiers, selectedCardType);
-        const bBestTier = getBestTier(b.redemptionTiers, selectedCardType);
-        
-        if (!aBestTier || !bBestTier) return 0;
-        
-        const aMetrics = calculateValueMetrics(aBestTier, selectedCardType);
-        const bMetrics = calculateValueMetrics(bBestTier, selectedCardType);
-        return bMetrics.effectiveReturn - aMetrics.effectiveReturn;
-      });
-
-    experiencesByCategory[category] = categoryExperiences;
-  });
+  // Top 3 in the city, plus the city average to compare them against
+  const { topThree, averageReturn } = useMemo(() => {
+    const withMetrics = cityFilteredExperiences.map((exp) => ({
+      experience: exp,
+      metrics: calculateValueMetrics(exp, selectedCardType),
+    }));
+    const average = withMetrics.length > 0
+      ? withMetrics.reduce((sum, item) => sum + item.metrics.effectiveReturn, 0) / withMetrics.length
+      : 0;
+    const best = [...withMetrics]
+      .sort((a, b) => b.metrics.effectiveReturn - a.metrics.effectiveReturn)
+      .slice(0, 3);
+    return { topThree: best, averageReturn: average };
+  }, [cityFilteredExperiences, selectedCardType]);
 
   const toggleCategoryExpansion = (category: string) => {
     const newExpanded = new Set(expandedCategories);
@@ -349,110 +355,72 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                 <h2 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
                     This month&apos;s best redemption rates
                 </h2>
+                <p className="text-sm" style={{ color: 'var(--yonder-navy)', opacity: 0.7 }}>
+                    Rates for {monthLabel}
+                </p>
             </div>
 
           <div className="grid gap-4 md:grid-cols-3 max-w-4xl mx-auto">
-            {(() => {
-              // Get all experiences with their best tiers and calculate metrics
-              const allExperiencesWithMetrics = cityFilteredExperiences
-                .filter(exp => exp.redemptionTiers.length > 0)
-                .map(exp => {
-                  const bestTier = getBestTier(exp.redemptionTiers, selectedCardType);
-                  if (!bestTier) return null;
-                  const metrics = calculateValueMetrics(bestTier, selectedCardType);
-                  return {
-                    experience: exp,
-                    tier: bestTier,
-                    metrics
-                  };
-                })
-                .filter(item => item !== null)
-                .sort((a, b) => b!.metrics.effectiveReturn - a!.metrics.effectiveReturn)
-                .slice(0, 3);
+            {topThree.map(({ experience, metrics }, index) => {
+              const rankEmojis = ['🥇', '🥈', '🥉'];
+              const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
 
-              // Calculate average for comparison
-              const allValidMetrics = cityFilteredExperiences
-                .filter(exp => exp.redemptionTiers.length > 0)
-                .map(exp => {
-                  const bestTier = getBestTier(exp.redemptionTiers, selectedCardType);
-                  if (!bestTier) return null;
-                  return calculateValueMetrics(bestTier, selectedCardType);
-                })
-                .filter(m => m !== null);
-              
-              const averageReturn = allValidMetrics.length > 0 
-                ? allValidMetrics.reduce((sum, m) => sum + m!.effectiveReturn, 0) / allValidMetrics.length
-                : 0;
-
-              return allExperiencesWithMetrics.map((item, index) => {
-                if (!item) return null;
-                const { experience, metrics } = item;
-                const rankEmojis = ['🥇', '🥈', '🥉'];
-                const rankColors = ['#FFD700', '#C0C0C0', '#CD7F32'];
-
-                return (
-                  <div
-                    key={experience.id}
-                    className="bg-white rounded-2xl shadow-xl p-4 relative transform hover:scale-105 transition-all duration-200"
-                    style={{ border: `2px solid ${rankColors[index]}` }}
+              return (
+                <div
+                  key={experience.id}
+                  className="bg-white rounded-2xl shadow-xl p-4 relative transform hover:scale-105 transition-all duration-200"
+                  style={{ border: `2px solid ${rankColors[index]}` }}
+                >
+                  {/* Rank Badge */}
+                  <div 
+                    className="absolute -top-4 -right-4 w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg"
+                    style={{ backgroundColor: rankColors[index] }}
                   >
-                    {/* Rank Badge */}
-                    <div 
-                      className="absolute -top-4 -right-4 w-12 h-12 rounded-full flex items-center justify-center text-2xl shadow-lg"
-                      style={{ backgroundColor: rankColors[index] }}
-                    >
-                      {rankEmojis[index]}
+                    {rankEmojis[index]}
+                  </div>
+
+                    {/* Experience Info */}
+                  <div className="mb-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-2xl">{getCategoryIcon(experience.category)}</span>
+                      <span className="text-sm font-medium px-2 py-1 rounded-full" style={{ 
+                        backgroundColor: 'var(--light-peach)', 
+                        color: 'var(--yonder-navy)' 
+                      }}>
+                        {experience.category}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
+                      {experience.name}
+                    </h3>
+                  </div>
+
+                  {/* Value Metrics */}
+                  <div className="space-y-3">
+                    <div className="text-center">
+                      <div className="text-3xl font-bold" style={{ color: 'var(--yonder-orange)' }}>
+                        £{metrics.valuePerKPoints.toFixed(2)}
+                      </div>
+                      <div className="text-lg font-medium text-gray-600">
+                        per 1,000 points
+                      </div>
                     </div>
 
-                      {/* Experience Info */}
-                    <div className="mb-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-2xl">{categoryIcons[experience.category] || categoryIcons.Default}</span>
-                        <span className="text-sm font-medium px-2 py-1 rounded-full" style={{ 
-                          backgroundColor: 'var(--light-peach)', 
-                          color: 'var(--yonder-navy)' 
-                        }}>
-                          {experience.category}
+                    <div className="text-center">
+                      <div className="text-md font-semibold" style={{ color: 'var(--foreground)' }}>
+                        {metrics.effectiveReturn.toFixed(1)}% return,{' '}
+                        <span
+                          className="font-bold"
+                          style={{ color: metrics.effectiveReturn >= averageReturn ? '#10B981' : '#EF4444' }}
+                        >
+                          {formatVsAverage(metrics.effectiveReturn - averageReturn)}
                         </span>
-                      </div>
-                      <h3 className="text-xl font-bold mb-2" style={{ color: 'var(--foreground)' }}>
-                        {experience.name}
-                      </h3>
-                      {experience.description && (
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                          {experience.description}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Value Metrics */}
-                    <div className="space-y-3">
-                      <div className="text-center">
-                        <div className="text-3xl font-bold" style={{ color: 'var(--yonder-orange)' }}>
-                          £{metrics.valuePerKPoints.toFixed(2)}
-                        </div>
-                        <div className="text-lg font-medium text-gray-600">
-                          per 1,000 points
-                        </div>
-                      </div>
-
-                      <div className="text-center">
-                        <div className="text-md font-semibold" style={{ color: 'var(--foreground)' }}>
-                          {metrics.effectiveReturn.toFixed(1)}% return, 
-                          <span 
-                            className="font-bold"
-                            style={{ color: metrics.effectiveReturn > averageReturn ? '#10B981' : '#EF4444' }}
-                          >
-                            {(metrics.effectiveReturn - averageReturn).toFixed(1)}% 
-                            {metrics.effectiveReturn > averageReturn ? ' more than average' : ''}
-                            </span>
-                        </div>
                       </div>
                     </div>
                   </div>
-                );
-              });
-            })()}
+                </div>
+              );
+            })}
           </div>
         </div>
         </div>
@@ -463,11 +431,11 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
             <button
               onClick={() => setSelectedCategory(null)}
               className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-base font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full justify-center ${
-                selectedCategory === null ? 'shadow-xl scale-105' : ''
+                activeCategory === null ? 'shadow-xl scale-105' : ''
               }`}
               style={{
-                backgroundColor: selectedCategory === null ? 'var(--yonder-navy)' : 'white',
-                color: selectedCategory === null ? 'white' : 'var(--foreground)'
+                backgroundColor: activeCategory === null ? 'var(--yonder-navy)' : 'white',
+                color: activeCategory === null ? 'white' : 'var(--foreground)'
               }}
             >
               <span className="text-xl">🌟</span>
@@ -478,14 +446,14 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                 key={category}
                 onClick={() => setSelectedCategory(category)}
                 className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-base font-semibold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105 w-full justify-center ${
-                  selectedCategory === category ? 'shadow-xl scale-105' : ''
+                  activeCategory === category ? 'shadow-xl scale-105' : ''
                 }`}
                 style={{
-                  backgroundColor: selectedCategory === category ? 'var(--yonder-navy)' : 'white',
-                  color: selectedCategory === category ? 'white' : 'var(--foreground)'
+                  backgroundColor: activeCategory === category ? 'var(--yonder-navy)' : 'white',
+                  color: activeCategory === category ? 'white' : 'var(--foreground)'
                 }}
               >
-                <span className="text-xl">{categoryIcons[category] || categoryIcons.Default}</span>
+                <span className="text-xl">{getCategoryIcon(category)}</span>
                 <span className="text-sm">{category}</span>
               </button>
             ))}
@@ -506,14 +474,14 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
             if (categoryExperiences.length === 0) return null;
             
             const isExpanded = expandedCategories.has(category);
-            const displayExperiences = isExpanded ? categoryExperiences : categoryExperiences.slice(0, 4);
-            const hasMore = categoryExperiences.length > 3;
+            const displayExperiences = isExpanded ? categoryExperiences : categoryExperiences.slice(0, VISIBLE_PER_CATEGORY);
+            const hasMore = categoryExperiences.length > VISIBLE_PER_CATEGORY;
 
             return (
               <div key={category}>
                 <div className="flex items-center justify-between mb-8 mt-8">
                   <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2 sm:gap-3 flex-1" style={{ color: 'var(--foreground)' }}>
-                    <span className="text-2xl sm:text-3xl">{categoryIcons[category] || categoryIcons.Default}</span>
+                    <span className="text-2xl sm:text-3xl">{getCategoryIcon(category)}</span>
                     <span>{category}</span>
                     <span className="text-sm sm:text-lg font-normal px-2 sm:px-3 py-1 rounded-full text-white flex-shrink-0" style={{ backgroundColor: 'var(--yonder-orange)' }}>
                       {categoryExperiences.length}
@@ -540,7 +508,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                 </div>
 
                 <div className="grid gap-6 grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
-                  {displayExperiences.map((experience, _index) => (
+                  {displayExperiences.map((experience) => (
                     <ExperienceCard
                       key={experience.id}
                       experience={experience}
@@ -560,7 +528,7 @@ export default function ExperiencesList({ experiences }: ExperiencesListProps) {
                         color: 'white'
                       }}
                     >
-                      Show {categoryExperiences.length - 4} more {category.toLowerCase()} experiences
+                      Show {categoryExperiences.length - VISIBLE_PER_CATEGORY} more {category.toLowerCase()} experiences
                     </button>
                   </div>
                 )}

@@ -41,5 +41,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-!/app/data/fallback-experiences.json
 
+# one-off migration output (scripts/migrate-history.mjs)
+/scripts/migration-output/
