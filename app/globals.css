@@ -1,68 +1,79 @@
 @import "tailwindcss";
 
+/* Colours from the Final design */
 :root {
-  --background: #ffe5cc; /* Soft peach background */
-  --foreground: #1e293b; /* Dark slate for text */
-  --yonder-navy: #1e293b; /* Dark blue accent */
-  --yonder-orange: #f28f44; /* Burnt orange E88267  */
-  --badge-sage: #13542c; /* Forest/sage green for badges */
-  --badge-red: #a0310f; /* Deep red for error badges */
-  --card-background: #ffffff;
-  --border-color: #e2e8f0;
-  --light-peach: #ffe5cc; /* Added missing light peach variable */
+  --peach: #ffe5cc;        /* hero background */
+  --cream: #fdf1e6;        /* page background below the hero */
+  --navy: #1e293b;         /* text, selected pills */
+  --orange: #f28f44;       /* accents, focus rings */
+  --muted: #5b6472;        /* secondary text */
+  --line: #f3dcc7;         /* pill and row borders */
+  --card-line: #f6e4d3;    /* card borders */
+  --tile: #fffaf5;         /* desktop tile background */
+  --note: #b4531a;         /* handwritten notes, "more points to unlock" */
+  --good: #13542c;
+  --good-bg: #e3f1e7;
+  --poor: #a0310f;
+  --poor-bg: #fbe6df;
+
+  /* Old names, still used by the FAQ page */
+  --foreground: var(--navy);
+  --yonder-navy: var(--navy);
+  --yonder-orange: var(--orange);
+  --light-peach: var(--peach);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-yonder-navy: var(--yonder-navy);
-  --color-yonder-orange: var(--yonder-orange);
-  --color-yonder-sage: var(--yonder-sage);
-  --color-card-background: var(--card-background);
-  --color-border: var(--border-color);
-  --font-sans: var(--font-manrope);
-  --font-serif: var(--font-lobster-two);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #2a240f;
-    --foreground: #1e293b;
-    --card-background: #ffe5cc;
-    --border-color: #fef7f0;
-  }
+  --color-peach: var(--peach);
+  --color-cream: var(--cream);
+  --color-navy: var(--navy);
+  --color-orange: var(--orange);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-card-line: var(--card-line);
+  --color-tile: var(--tile);
+  --color-note: var(--note);
+  --color-good: var(--good);
+  --color-good-bg: var(--good-bg);
+  --color-poor: var(--poor);
+  --color-poor-bg: var(--poor-bg);
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-serif: var(--font-lobster-two), Georgia, serif;
+  --font-hand: var(--font-caveat), cursive;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-manrope), system-ui, -apple-system, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background: var(--cream);
+  color: var(--navy);
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
 }
 
-/* Add smooth transitions for interactive elements */
-.pill-transition {
-  transition: all 0.15s ease-in-out;
+/* Peach hero band that fades into the cream page */
+.page-bg {
+  background: linear-gradient(180deg, var(--peach) 0, var(--peach) var(--hero-end, 900px), var(--cream) var(--hero-end, 900px));
 }
 
-.pill-transition:hover {
-  transform: scale(1.05);
+input:focus-visible,
+button:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: 2px;
 }
 
-/* Container shadows */
-.container-shadow {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+/* Gold, silver and bronze rank discs in the leaderboard */
+.medal-1, .medal-2, .medal-3 {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.55), 0 4px 10px -4px rgba(30, 41, 59, 0.45);
 }
+.medal-1 { background: linear-gradient(145deg, #fbe39a 0%, #e2b33c 55%, #b8860b 100%); }
+.medal-2 { background: linear-gradient(145deg, #f4f6f8 0%, #c5ccd4 55%, #8f99a4 100%); }
+.medal-3 { background: linear-gradient(145deg, #f3c9a2 0%, #c98b55 55%, #8f5a2e 100%); }
 
-
-/* Full-page gradient */
+/* The FAQ page still uses these from the old design */
 .full-page-gradient {
-  background: linear-gradient(to bottom, 
-    #FFE5CC 0%,           
-    #FFE5CC 8%,           /* Solid until 8% down */
-    rgba(255, 229, 204, 0.4) 15%,  /* Quick fade */
-    rgba(255, 229, 204, 0.1) 25%,  /* Almost gone */
-    #fef7f0 30%           /* Background color by 30% */
-  );
+  background: linear-gradient(to bottom, #ffe5cc 0%, #ffe5cc 8%, rgba(255, 229, 204, 0.4) 15%, rgba(255, 229, 204, 0.1) 25%, #fef7f0 30%);
   min-height: 100vh;
 }
-

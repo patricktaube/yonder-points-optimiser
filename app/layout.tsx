@@ -1,31 +1,30 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Manrope, Lobster_Two } from "next/font/google";
+import { Manrope, Lobster_Two, Caveat } from "next/font/google";
 import "./globals.css";
-import { Analytics } from "@vercel/analytics/next";   
+import { Analytics } from "@vercel/analytics/next";
 
-
-
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
+// next/font downloads these at build time and serves them from this site, so
+// there is no request to Google Fonts in the browser. Only the weights the
+// design uses are listed, which keeps the font files small.
 const manrope = Manrope({
   variable: "--font-manrope",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const lobsterTwo = Lobster_Two({
   variable: "--font-lobster-two",
   subsets: ["latin"],
-  weight: ["400"],
+  weight: ["700"],
+});
+
+// Handwritten notes (city average). Not needed for first paint, so it isn't
+// preloaded; text shows in a fallback font until it arrives.
+const caveat = Caveat({
+  variable: "--font-caveat",
+  subsets: ["latin"],
+  weight: ["600"],
+  preload: false,
 });
 
 export const metadata: Metadata = {
@@ -68,11 +67,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" style={{ backgroundColor: '#fef7f0' }}>
-      <body
-        className={`${manrope.variable} ${lobsterTwo.variable} ${geistSans.variable} ${geistMono.variable} antialiased`}
-        style={{ backgroundColor: '#fef7f0', minHeight: '100vh' }}
-      >
+    <html lang="en">
+      <body className={`${manrope.variable} ${lobsterTwo.variable} ${caveat.variable} antialiased`}>
         {children}
         <Analytics />
       </body>
