@@ -55,7 +55,8 @@ export default function ExperienceCard({
       <div className="whitespace-nowrap text-right lg:mt-auto lg:flex lg:items-end lg:justify-between lg:gap-1.5 lg:pt-3.5 lg:text-left">
         <div>
           <span className={`inline-flex items-start font-serif font-bold leading-[0.9] ${valueColour}`}>
-            <span className="mt-[3px] text-[15px] lg:mt-1 lg:text-xl">£</span>
+            {/* Lobster Two's "£" looks like "Ł", so the symbol uses Manrope. */}
+            <span className="mt-[3px] font-sans text-[15px] font-extrabold lg:mt-1 lg:text-xl">£</span>
             <span className="text-[30px] lg:text-[40px]">{whole}</span>
             <span className="mt-[3px] text-[15px] lg:mt-1 lg:text-xl">.{pence}</span>
           </span>
