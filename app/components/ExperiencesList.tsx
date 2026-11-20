@@ -67,9 +67,9 @@ export default function ExperiencesList({ experiences, monthLabel }: Experiences
     if (!saved.hasCompletedSetup) setSettingsOpen(true);
   }, []);
 
-  // The handwritten font (Caveat, 50 KB) is only used for the "city average"
-  // notes below the fold. A browser downloads a font as soon as any text uses
-  // it, which made it compete with the critical files and slowed first paint
+  // The handwritten font (Caveat, 50 KB) is only used for notes below the
+  // fold: the "city average" line and the "↑ 28% above avg" notes on tiles.
+  // A browser downloads a font as soon as any text uses it, which made it compete with the critical files and slowed first paint
   // on mobile. So the notes switch to it only once the page has loaded.
   useEffect(() => {
     const enable = () => setHandFont(true);
@@ -346,7 +346,7 @@ export default function ExperiencesList({ experiences, monthLabel }: Experiences
               >
                 <div className="mb-2 flex items-center gap-2.5 lg:mb-4">
                   <span aria-hidden="true" className="text-[19px] lg:text-[22px]">{getCategoryIcon(category)}</span>
-                  <h3 className="m-0 text-lg font-extrabold lg:text-[22px]">{category}</h3>
+                  <h3 className="m-0 font-serif text-[26px] font-bold leading-[1.1] lg:text-[32px]">{category}</h3>
                   <span className="text-sm font-bold text-muted">{items.length}</span>
                   <span className={`ml-auto -rotate-2 whitespace-nowrap text-lg ${handFont ? 'font-hand' : 'italic'} font-semibold text-note lg:text-[21px]`}>
                     {city} average {money(average)}
@@ -362,10 +362,12 @@ export default function ExperiencesList({ experiences, monthLabel }: Experiences
                         key={r.exp.id}
                         className={hideOnMobile ? 'max-lg:hidden' : ''}
                         name={r.exp.name}
-                        value={money(r.value)}
+                        value={r.value}
                         line={line.text}
                         lineTone={line.tone}
                         label={r.label}
+                        diffPct={Math.round(Math.abs(r.value / average - 1) * 100)}
+                        handFont={handFont}
                       />
                     );
                   })}
