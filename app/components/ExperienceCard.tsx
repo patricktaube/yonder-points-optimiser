@@ -1,160 +1,54 @@
 // app/components/ExperienceCard.tsx
-'use client';
+import { ValueLabel } from '../lib/experiences';
 
-import { useMemo, useState, useRef } from 'react';
-import { Experience, calculateValueMetrics, CardType, BadgeThresholds, getExperienceBadge, CONSTANTS } from '../lib/experiences';
+export type LineTone = 'good' | 'note' | 'muted';
 
-interface ExperienceCardProps {
-  experience: Experience;
-  selectedCardType: CardType;
-  badgeThresholds?: BadgeThresholds;
+export interface ExperienceCardProps {
+  name: string;
+  value: string;     // "£45.30", what 10,000 points are worth
+  line: string;      // "From 17,670 points", "You can get £80 now (17,670 pts)", ...
+  lineTone: LineTone;
+  label: ValueLabel;
+  className?: string;
 }
 
-export default function ExperienceCard({
-  experience,
-  selectedCardType,
-  badgeThresholds,
-}: ExperienceCardProps) {
-  // Cursor tracking state
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovered, setIsHovered] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  // One rate per experience now, so this is just the value maths + badge.
-  const { metrics, badgeType } = useMemo(() => ({
-    metrics: calculateValueMetrics(experience, selectedCardType),
-    badgeType: badgeThresholds
-      ? getExperienceBadge(experience, selectedCardType, badgeThresholds)
-      : null,
-  }), [experience, selectedCardType, badgeThresholds]);
-
-  // Cursor tracking handlers
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    
-    const rect = cardRef.current.getBoundingClientRect();
-    setMousePosition({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
-
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-  };
-
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setMousePosition({ x: 0, y: 0 });
-  };
-  
-  // Render badge
-  const renderBadge = () => {
-  if (!badgeType) return null;
-
-  const badgeStyle = {
-    position: 'absolute' as const,
-    top: CONSTANTS.BADGE_POSITION_OFFSET.TOP,
-    right: CONSTANTS.BADGE_POSITION_OFFSET.RIGHT,
-    color: 'white',
-    fontSize: '0.875rem',
-    fontWeight: 'bold',
-    padding: '0.5rem 1rem',
-    borderRadius: '9999px',
-    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-    zIndex: 10
-  };
-
-  switch (badgeType) {
-    case 'best-value':
-      return (
-        <div 
-          className="absolute text-white text-sm font-bold rounded-full shadow-lg z-10 flex items-center justify-center"
-          style={{ 
-            ...badgeStyle,
-            backgroundColor: 'var(--badge-sage)',
-          }}
-        >
-          {/* Use Tailwind responsive classes instead of window.innerWidth */}
-          <span className="sm:hidden">👍</span>
-          <span className="hidden sm:inline">Great Value</span>
-        </div>
-      );
-    case 'bad-deal':
-      return (
-        <div 
-          className="absolute text-white text-sm font-bold rounded-full shadow-lg z-10 flex items-center justify-center"
-          style={{ 
-            ...badgeStyle,
-            backgroundColor: 'var(--badge-red)',
-          }}
-        >
-          <span className="sm:hidden">👎</span>
-          <span className="hidden sm:inline">Bad Deal</span>
-        </div>
-      );
-    default:
-      return null;
-  }
+export const toneClass: Record<LineTone, string> = {
+  good: 'text-good',
+  note: 'text-note',
+  muted: 'text-muted',
 };
 
+// One experience. On phones it's a row in a list (name on the left, value on
+// the right). From the `lg` breakpoint it becomes a tile in a 5-column grid.
+// It's the same markup either way: `lg:contents` drops the left wrapper's box
+// so its children join the tile directly, and `order` puts them in place.
+export default function ExperienceCard({ name, value, line, lineTone, label, className = '' }: ExperienceCardProps) {
+  const poor = label === 'Poor value';
+
   return (
-    <div 
-      ref={cardRef}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className="rounded-2xl p-4 relative hover:shadow-xl transition-all duration-300 hover:scale-102 cursor-pointer"
-      style={{ 
-        backgroundColor: 'var(--card-background)',
-        border: `2px solid var(--border-color)`,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-        outline: "none",
-        backgroundClip: "padding-box"
-      }}
-    >
-      {/* Cursor glow effect - desktop only */}
-      {isHovered && (
-        <div
-          className="absolute pointer-events-none transition-opacity duration-300 hidden md:block"
-          style={{
-            left: mousePosition.x,
-            top: mousePosition.y,
-            width: 200,
-            height: 200,
-            background: 'radial-gradient(circle, rgba(255,255,255,0.15) 0%, transparent 70%)',
-            borderRadius: '50%',
-            transform: 'translate(-50%, -50%)',
-          }}
-        />
-      )}
-
-      {renderBadge()}
-
-      {/* Darker Peach Title Bar */}
-      <div 
-        className="-mx-4 -mt-4 px-4 py-3 mb-3 rounded-t-xl"
-        style={{ 
-          backgroundColor: "var(--yonder-orange)", // Darker peach
-        }}
-      >
-        <h3 className="text-lg font-bold line-clamp-2" style={{ color: '#ffffff' }}>
-          {experience.name}
-        </h3>
+    <li className={`${className} flex items-center gap-2.5 border-t border-line py-[13px] lg:min-h-32 lg:flex-col lg:items-stretch lg:gap-0 lg:rounded-[18px] lg:border lg:border-card-line lg:bg-tile lg:px-4 lg:py-3.5`}>
+      <div className="min-w-0 flex-1 lg:contents">
+        <div className="text-base font-bold lg:order-1 lg:min-h-[38px] lg:text-[15px] lg:leading-tight">{name}</div>
+        <div className={`text-[13px] font-semibold lg:order-3 lg:mt-0.5 lg:text-xs ${toneClass[lineTone]}`}>{line}</div>
+        {label && (
+          <div className="mt-[5px] lg:order-4 lg:mt-auto lg:pt-2">
+            <span
+              className={`inline-block whitespace-nowrap rounded-full px-[9px] py-[3px] text-[11px] font-extrabold ${
+                poor ? 'bg-poor-bg text-poor' : 'bg-good-bg text-good'
+              }`}
+            >
+              {label}
+            </span>
+          </div>
+        )}
       </div>
-
-      {/* Main Value Display */}
-      <div className="text-center py-1 px-1 rounded-xl mb-1" style={{ backgroundColor: 'var(--light-peach)' }}>
-        <div className="text-3xl font-black mb-1" style={{ color: 'var(--yonder-navy)' }}>
-          £{metrics.valuePerKPoints.toFixed(2)}
-        </div>
-        <div className="text-lg font-semibold mb-2" style={{ color: 'var(--foreground)', opacity: 0.8 }}>
-          per 1,000 points
-        </div>
-        <div className="text-sm font-medium" style={{ color: 'var(--yonder-orange)' }}>
-          {metrics.effectiveReturn.toFixed(1)}% return rate
+      <div className="whitespace-nowrap text-right lg:order-2 lg:mt-1.5 lg:flex lg:items-baseline lg:gap-1.5 lg:text-left">
+        <div className={`text-lg font-extrabold lg:text-2xl ${poor ? 'text-poor' : ''}`}>{value}</div>
+        <div className="text-[11px] text-muted lg:text-xs">
+          <span className="lg:hidden">per 10k pts</span>
+          <span className="hidden lg:inline">/ 10k pts</span>
         </div>
       </div>
-    </div>
+    </li>
   );
 }

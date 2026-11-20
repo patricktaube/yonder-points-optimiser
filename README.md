@@ -7,8 +7,9 @@ A lightweight tool for finding the best-value redemptions for your Yonder credit
 - **Card types**: Debit Free, Debit Paid, Credit Free and Credit Paid, each with its own earn rate (`CARD_TYPES` in `app/lib/experiences.ts`)
 - **City filtering**: London, Birmingham, Bristol & Bath, Edinburgh and Manchester (taken from the Sheet's `lists` tab)
 - **Saved settings**: card type and city are stored in the browser (localStorage)
-- **Badges**: "Great Value" and "Bad Deal" based on percentiles of this month's return rates in your city
-- **Categories and Top 3**: browse by category, plus the three best rates in your city
+- **Points balance**: type a balance (or pick 5k/10k/25k/50k) to see what you can get now and how many points you need for the rest; optionally hide anything out of reach
+- **Labels**: "Great value" (15%+ above the city average) and "Poor value" (20%+ below), comparing £ per 10,000 points
+- **Leaderboard and categories**: the five best rates in your city, plus every experience by category, best value first
 - **Month label**: shows which month the rates are for (the latest month in the Sheet)
 
 ## 🛠️ Tech Stack
@@ -23,12 +24,15 @@ A lightweight tool for finding the best-value redemptions for your Yonder credit
 - `app/lib/sheets.ts` (server only): signs a service-account JWT with Node's `crypto`, fetches the Sheet in one `values:batchGet` call, and parses and validates the rows.
 - `app/lib/experiences.ts`: the `Experience` type, card types, category order/icons, value maths and badge logic. Safe to import from client components.
 - `app/page.tsx`: static page with **ISR**, regenerated at most hourly (`revalidate = 3600`). It sends only the latest month's experiences to the browser. If the Sheet can't be read during regeneration, the last good page keeps being served. If it can't be read at build time, the build fails.
-- `app/components/ExperiencesList.tsx`: filtering, grouping, top 3 and settings UI.
+- `app/components/ExperiencesList.tsx`: the page: balance input, leaderboard, category filter and category cards. Responsive: one set of markup that switches from the phone layout to the desktop layout at Tailwind's `lg` breakpoint (1024px).
+- `app/components/ExperienceCard.tsx`: one experience (a row on phones, a tile on desktop).
+- `app/components/SettingsMenu.tsx`: the city/card pill and its panel (bottom sheet on phones), including the first-visit welcome.
 
 ## 📊 Data Model
 
 - One row per experience per month. Past months stay in the Sheet as history.
-- Each row stores only the **middle tier** (points and £). Yonder's tiers are 1×/2×/4× of the same rate, so one pair is enough.
+- Each row stores only the **middle tier** (points and £). Yonder's tiers are 1×/2×/4× of the same rate, so one pair is enough: the site works out the small tier (half) and the large tier (double) itself.
+- `£ per 10,000 points = pounds / points × 10000` (the headline number on the site)
 - `£ per 1,000 points = pounds / points × 1000`
 - `return % = pounds / (points / card's points per £) × 100`
 

@@ -25,29 +25,6 @@ export const CARD_TYPES = {
 
 export type CardType = keyof typeof CARD_TYPES;
 
-// Badge system interfaces
-export interface BadgeThresholds {
-  bestValueThreshold: number;
-  badDealThreshold: number;
-}
-
-export type BadgeType = 'best-value' | 'bad-deal' | null;
-
-const BADGE_PERCENTILES = {
-  BEST_VALUE: 95, // 95th percentile for best value
-  BAD_DEAL: 20,   // 20th percentile for bad deal
-} as const;
-
-const FALLBACK_THRESHOLDS = {
-  BEST_VALUE: 2.0,
-  BAD_DEAL: 1.6
-} as const;
-
-const BADGE_POSITION_OFFSET = {
-  TOP: -10,
-  RIGHT: -10
-} as const;
-
 // --- Months ------------------------------------------------------------------
 
 // "YYYY-MM" strings sort correctly as plain text ("2025-11" > "2025-09"), so
@@ -125,49 +102,62 @@ export function calculateValueMetrics(
   };
 }
 
-// --- Badges ------------------------------------------------------------------
+// --- Tiers and value labels ---------------------------------------------------
 
-// Calculate percentile helper function
-function getPercentile(sortedArray: number[], percentile: number): number {
-  if (sortedArray.length === 0) return 0;
-
-  const index = Math.ceil((percentile / 100) * sortedArray.length) - 1;
-  return sortedArray[Math.max(0, Math.min(index, sortedArray.length - 1))];
+// Yonder sells each experience in three tiers at 1x, 2x and 4x the same rate.
+// The Sheet stores the middle (2x) tier, so the small tier is half of it and
+// the large tier is double.
+export interface Tier {
+  points: number;
+  pounds: number;
 }
 
-// Calculate global badge thresholds based on all experiences and selected card type
-export function calculateBadgeThresholds(experiences: Experience[], cardType: CardType): BadgeThresholds {
-  const allReturnRates = experiences
-    .map((exp) => calculateValueMetrics(exp, cardType).effectiveReturn)
-    .sort((a, b) => a - b);
-
-  if (allReturnRates.length === 0) {
-    return {
-      bestValueThreshold: FALLBACK_THRESHOLDS.BEST_VALUE,
-      badDealThreshold: FALLBACK_THRESHOLDS.BAD_DEAL
-    };
-  }
-
-  return {
-    bestValueThreshold: getPercentile(allReturnRates, BADGE_PERCENTILES.BEST_VALUE),
-    badDealThreshold: getPercentile(allReturnRates, BADGE_PERCENTILES.BAD_DEAL),
-  };
+export function getTiers(experience: Pick<Experience, 'points' | 'pounds'>): Tier[] {
+  const { points, pounds } = experience;
+  return [
+    { points: Math.round(points / 2), pounds: pounds / 2 },
+    { points, pounds },
+    { points: points * 2, pounds: pounds * 2 },
+  ];
 }
 
-// Determine what badge (if any) an experience should get
-export function getExperienceBadge(
-  experience: Experience,
-  cardType: CardType,
-  thresholds: BadgeThresholds,
-): BadgeType {
-  const { effectiveReturn } = calculateValueMetrics(experience, cardType);
+// The biggest tier the balance covers, or null if it covers none.
+export function getBestAffordableTier(tiers: Tier[], balance: number): Tier | null {
+  let best: Tier | null = null;
+  tiers.forEach((tier) => {
+    if (tier.points <= balance) best = tier;
+  });
+  return best;
+}
 
-  if (effectiveReturn >= thresholds.bestValueThreshold) return 'best-value';
-  if (effectiveReturn <= thresholds.badDealThreshold) return 'bad-deal';
+// What 10,000 points are worth in £. This is the headline number on the site.
+export function valuePer10k(experience: Pick<Experience, 'points' | 'pounds'>): number {
+  return (experience.pounds / experience.points) * 10000;
+}
+
+export function averageValuePer10k(experiences: Experience[]): number {
+  if (experiences.length === 0) return 0;
+  return experiences.reduce((sum, exp) => sum + valuePer10k(exp), 0) / experiences.length;
+}
+
+// Labels compare a rate with the city average for the month:
+// 15% or more above it is "Great value", 20% or more below it is "Poor value".
+const GREAT_VALUE_RATIO = 1.15;
+const POOR_VALUE_RATIO = 0.8;
+
+export type ValueLabel = 'Great value' | 'Poor value' | null;
+
+export function getValueLabel(value: number, average: number): ValueLabel {
+  if (average <= 0) return null;
+  const ratio = value / average;
+  if (ratio >= GREAT_VALUE_RATIO) return 'Great value';
+  if (ratio < POOR_VALUE_RATIO) return 'Poor value';
   return null;
 }
 
-// Export constants for use in components
-export const CONSTANTS = {
-  BADGE_POSITION_OFFSET
-} as const;
+// --- Formatting ----------------------------------------------------------------
+
+export const formatPoints = (n: number) => Math.round(n).toLocaleString('en-GB');
+
+// Whole pounds stay whole (£19), anything else gets pence (£37.50).
+export const formatPounds = (x: number) => (Number.isInteger(x) ? `£${x}` : `£${x.toFixed(2)}`);
